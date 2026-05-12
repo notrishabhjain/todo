@@ -11,12 +11,12 @@ class EnhancedTranscriptAnalyzer(
 ) {
 
     private val speakerRoleDetector = SpeakerRoleDetector()
-    private val contextBuilder = ConversationContextBuilder()
 
     fun analyze(transcript: String): List<TranscriptActionItem> {
         if (transcript.isBlank()) return emptyList()
 
         val speakerProfiles = speakerRoleDetector.detectRoles(transcript)
+        val contextBuilder = ConversationContextBuilder()
         val context = contextBuilder.build(transcript)
 
         val segments = splitIntoSegments(transcript)

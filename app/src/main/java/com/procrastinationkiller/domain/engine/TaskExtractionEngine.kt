@@ -54,7 +54,7 @@ class TaskExtractionEngine @Inject constructor(
             sender = sender,
             originalText = text,
             confidence = confidence,
-            shouldAutoApprove = learningAdjustment?.shouldAutoApprove == true && confidence > 0.9f
+            autoApprove = learningAdjustment?.shouldAutoApprove == true && confidence > 0.9f
         )
     }
 

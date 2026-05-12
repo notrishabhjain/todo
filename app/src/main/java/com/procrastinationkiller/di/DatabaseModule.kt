@@ -24,6 +24,10 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        // TODO: Replace fallbackToDestructiveMigration() with incremental Migration objects
+        // before production release. Destructive migration drops all tables (learning data,
+        // contacts, task suggestions) on any schema version bump. Acceptable during
+        // development but must be addressed before user-facing releases.
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,

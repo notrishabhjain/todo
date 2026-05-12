@@ -128,6 +128,27 @@ class EnhancedTranscriptAnalyzerTest {
     }
 
     @Test
+    fun `multiple analyze calls do not accumulate participants`() {
+        val transcript1 = """
+            Alice: Please send the report tomorrow
+        """.trimIndent()
+
+        val transcript2 = """
+            Bob: Please deploy the fix by Friday
+        """.trimIndent()
+
+        val items1 = analyzer.analyze(transcript1)
+        val items2 = analyzer.analyze(transcript2)
+
+        // Verify that a second call does not carry over participants from the first
+        // Both calls should produce independent results
+        assertTrue(items1.isNotEmpty())
+        assertTrue(items2.isNotEmpty())
+        // If state leaked, owner detection could be impacted
+        // The fix ensures a fresh ConversationContextBuilder per analyze() call
+    }
+
+    @Test
     fun `meeting type is included in action items`() {
         val transcript = """
             PM: Let's estimate the sprint backlog

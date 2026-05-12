@@ -15,6 +15,7 @@ data class TaskSuggestionEntity(
     val sender: String,
     val originalText: String,
     val confidence: Float,
+    val autoApprove: Boolean = false,
     val status: String = "PENDING",
     val createdAt: Long = System.currentTimeMillis()
 )

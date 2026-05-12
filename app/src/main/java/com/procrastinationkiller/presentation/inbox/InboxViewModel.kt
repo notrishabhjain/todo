@@ -55,7 +55,8 @@ class InboxViewModel @Inject constructor(
                         sourceApp = entity.sourceApp,
                         sender = entity.sender,
                         originalText = entity.originalText,
-                        confidence = entity.confidence
+                        confidence = entity.confidence,
+                        autoApprove = entity.autoApprove
                     )
                 }
 

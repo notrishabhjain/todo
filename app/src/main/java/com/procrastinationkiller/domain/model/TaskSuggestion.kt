@@ -11,7 +11,6 @@ data class TaskSuggestion(
     val sender: String,
     val originalText: String,
     val confidence: Float,
-    val shouldAutoApprove: Boolean = false,
     val whatsAppContext: WhatsAppContext? = null,
     val autoApprove: Boolean = false,
     val contactPriority: ContactPriority? = null

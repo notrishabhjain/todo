@@ -115,7 +115,8 @@ class TaskExtractionUseCase @Inject constructor(
                 sourceApp = suggestion.sourceApp,
                 sender = suggestion.sender,
                 originalText = suggestion.originalText,
-                confidence = suggestion.confidence
+                confidence = suggestion.confidence,
+                autoApprove = suggestion.autoApprove
             )
             taskSuggestionDao.insert(entity)
         }

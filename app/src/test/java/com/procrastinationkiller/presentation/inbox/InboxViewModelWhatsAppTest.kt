@@ -141,6 +141,32 @@ class InboxViewModelWhatsAppTest {
         assertEquals("Task approved: WhatsApp Task", viewModel.uiState.value.message)
     }
 
+    @Test
+    fun `auto-approve suggestions from DB are automatically approved`() = runTest {
+        // Insert a suggestion with autoApprove=true directly into the DAO
+        fakeSuggestionDao.insert(
+            TaskSuggestionEntity(
+                suggestedTitle = "Auto Task",
+                description = "Auto description",
+                priority = "HIGH",
+                sourceApp = "com.whatsapp",
+                sender = "VIP Boss",
+                originalText = "Do this now",
+                confidence = 0.95f,
+                autoApprove = true,
+                status = "PENDING"
+            )
+        )
+
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao, fakeContactRepository)
+        advanceUntilIdle()
+
+        // Auto-approve suggestions should be processed and removed from the list
+        assertTrue(viewModel.uiState.value.suggestions.isEmpty())
+        // The task should have been created in the repository
+        assertTrue(fakeTaskRepository.getTasks().any { it.title == "Auto Task" })
+    }
+
     private fun createWhatsAppSuggestion(
         title: String,
         sender: String,
@@ -195,6 +221,8 @@ class InboxViewModelWhatsAppTest {
         private val tasksFlow = MutableStateFlow<List<TaskEntity>>(emptyList())
         private val tasks = mutableListOf<TaskEntity>()
         private var nextId = 1L
+
+        fun getTasks(): List<TaskEntity> = tasks.toList()
 
         override fun getAllTasks(): Flow<List<TaskEntity>> = tasksFlow
         override fun getTasksByStatus(status: String): Flow<List<TaskEntity>> = tasksFlow
