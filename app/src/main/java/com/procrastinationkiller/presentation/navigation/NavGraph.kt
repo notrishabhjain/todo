@@ -6,13 +6,16 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.procrastinationkiller.presentation.analytics.AnalyticsScreen
 import com.procrastinationkiller.presentation.dashboard.DashboardScreen
 import com.procrastinationkiller.presentation.inbox.InboxScreen
 import com.procrastinationkiller.presentation.onboarding.OnboardingScreen
+import com.procrastinationkiller.presentation.settings.ExportImportScreen
 import com.procrastinationkiller.presentation.settings.KeywordManagementScreen
 import com.procrastinationkiller.presentation.settings.SettingsScreen
 import com.procrastinationkiller.presentation.taskdetail.TaskDetailScreen
 import com.procrastinationkiller.presentation.tasks.TasksListScreen
+import com.procrastinationkiller.presentation.transcript.MeetingTranscriptScreen
 
 object Routes {
     const val DASHBOARD = "dashboard"
@@ -22,6 +25,9 @@ object Routes {
     const val SETTINGS = "settings"
     const val KEYWORD_MANAGEMENT = "keyword_management"
     const val ONBOARDING = "onboarding"
+    const val ANALYTICS = "analytics"
+    const val MEETING_TRANSCRIPT = "meeting_transcript"
+    const val EXPORT_IMPORT = "export_import"
 
     fun taskDetail(taskId: Long): String = "task_detail/$taskId"
 }
@@ -77,6 +83,15 @@ fun NavGraph(navController: NavHostController) {
                     }
                 }
             )
+        }
+        composable(Routes.ANALYTICS) {
+            AnalyticsScreen()
+        }
+        composable(Routes.MEETING_TRANSCRIPT) {
+            MeetingTranscriptScreen()
+        }
+        composable(Routes.EXPORT_IMPORT) {
+            ExportImportScreen()
         }
     }
 }

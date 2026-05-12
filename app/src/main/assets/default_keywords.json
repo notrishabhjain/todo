@@ -1,0 +1,46 @@
+{
+  "action_keywords": {
+    "english": [
+      "do", "complete", "send", "submit", "call", "reply", "review",
+      "check", "update", "schedule", "prepare", "fix", "deploy", "test",
+      "follow up", "remind", "finish", "deliver", "write", "create",
+      "forward", "approve", "confirm", "book", "pay", "buy", "order",
+      "arrange", "organize", "discuss", "plan", "implement", "resolve",
+      "address", "handle", "process", "document", "share", "upload",
+      "download", "install", "configure", "setup", "migrate", "refactor"
+    ],
+    "hindi_hinglish": [
+      "karna", "kar dena", "bhejna", "bhej dena", "dekh lena", "dekho",
+      "yaad dilana", "call karna", "check karna", "review karna",
+      "bana dena", "jaldi karna", "bhejo", "likho", "likh dena",
+      "batana", "bata dena", "kar do", "de dena", "de do",
+      "karo", "karein", "karenge", "karungi", "karunga",
+      "sambhalna", "theek karna", "pura karna", "jama karna"
+    ]
+  },
+  "urgency_keywords": {
+    "english": [
+      "urgent", "asap", "immediately", "high priority", "today", "tonight",
+      "right now", "critical", "important", "deadline", "overdue",
+      "time sensitive", "rush", "emergency", "must", "required"
+    ],
+    "hindi_hinglish": [
+      "jaldi", "aaj hi", "turant", "abhi", "important", "zaruri",
+      "urgent hai", "jaldi karo", "fatafat", "fauran", "bahut zaruri",
+      "time par", "der mat karna"
+    ]
+  },
+  "time_indicators": {
+    "english": [
+      "tomorrow", "tonight", "eod", "end of day", "by evening",
+      "by morning", "next week", "monday", "tuesday", "wednesday",
+      "thursday", "friday", "saturday", "sunday", "this afternoon",
+      "before lunch", "after lunch", "by 5pm", "end of week"
+    ],
+    "hindi_hinglish": [
+      "kal", "kal tak", "shaam tak", "subah", "agle hafte",
+      "aaj", "raat tak", "parso", "do din mein", "is hafte",
+      "dopahar tak", "shaam ko"
+    ]
+  }
+}
