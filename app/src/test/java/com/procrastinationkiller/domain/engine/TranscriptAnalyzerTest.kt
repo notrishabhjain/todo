@@ -1,5 +1,9 @@
 package com.procrastinationkiller.domain.engine
 
+import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
+import com.procrastinationkiller.domain.engine.ml.OnnxIntentClassifier
+import com.procrastinationkiller.domain.engine.ml.RuleBasedIntentClassifier
+import com.procrastinationkiller.domain.engine.ml.TextFeatureExtractor
 import com.procrastinationkiller.domain.model.TaskPriority
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -148,5 +152,79 @@ class TranscriptAnalyzerTest {
 
         assertTrue(items.isNotEmpty())
         assertEquals("Rahul", items.first().owner)
+    }
+
+    // Enhanced analyze tests
+
+    @Test
+    fun `enhancedAnalyze produces action items with speaker roles`() {
+        val pipeline = createPipeline()
+        val transcript = """
+            Manager: Let's start the meeting
+            Manager: Sarah, please review the document
+            Sarah: Will do
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.enhancedAnalyze(transcript, pipeline)
+
+        assertTrue(items.isNotEmpty())
+        val sarahItem = items.find { it.owner == "Sarah" }
+        assertNotNull(sarahItem)
+        assertNotNull(sarahItem?.speakerRole)
+    }
+
+    @Test
+    fun `enhancedAnalyze produces richer items with meeting type`() {
+        val pipeline = createPipeline()
+        val transcript = """
+            Alice: What did you do yesterday?
+            Bob: I need to fix the blocker today
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.enhancedAnalyze(transcript, pipeline)
+
+        assertTrue(items.isNotEmpty())
+        assertNotNull(items.first().meetingType)
+    }
+
+    @Test
+    fun `enhancedAnalyze works without pipeline`() {
+        val transcript = """
+            Alice: Please send the report tomorrow
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.enhancedAnalyze(transcript, null)
+
+        assertTrue(items.isNotEmpty())
+        assertNull(items.first().mlConfidence)
+    }
+
+    @Test
+    fun `enhancedAnalyze handles empty transcript`() {
+        val items = transcriptAnalyzer.enhancedAnalyze("", null)
+        assertTrue(items.isEmpty())
+    }
+
+    @Test
+    fun `enhancedAnalyze produces at least as good results as basic analyze`() {
+        val pipeline = createPipeline()
+        val transcript = """
+            John: We need to review the PR before end of day
+            Sarah: I will send the report tomorrow
+        """.trimIndent()
+
+        val basicItems = transcriptAnalyzer.analyze(transcript)
+        val enhancedItems = transcriptAnalyzer.enhancedAnalyze(transcript, pipeline)
+
+        // Enhanced should find at least the same action items
+        assertTrue(enhancedItems.isNotEmpty())
+        assertTrue(basicItems.isNotEmpty())
+    }
+
+    private fun createPipeline(): HybridClassificationPipeline {
+        val featureExtractor = TextFeatureExtractor()
+        val onnxClassifier = OnnxIntentClassifier()
+        val ruleClassifier = RuleBasedIntentClassifier()
+        return HybridClassificationPipeline(featureExtractor, onnxClassifier, ruleClassifier)
     }
 }

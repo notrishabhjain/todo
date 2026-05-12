@@ -1,5 +1,7 @@
 package com.procrastinationkiller.domain.engine
 
+import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
+import com.procrastinationkiller.domain.engine.transcript.EnhancedTranscriptAnalyzer
 import com.procrastinationkiller.domain.model.TaskPriority
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -9,7 +11,11 @@ data class TranscriptActionItem(
     val owner: String?,
     val priority: TaskPriority,
     val dueDate: Long?,
-    val confidence: Float
+    val confidence: Float,
+    val speakerRole: String? = null,
+    val meetingType: String? = null,
+    val contextTopic: String? = null,
+    val mlConfidence: Float? = null
 )
 
 @Singleton
@@ -131,5 +137,13 @@ class TranscriptAnalyzer @Inject constructor(
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")
         private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please)\\s+")
+    }
+
+    fun enhancedAnalyze(
+        transcript: String,
+        pipeline: HybridClassificationPipeline? = null
+    ): List<TranscriptActionItem> {
+        val enhancedAnalyzer = EnhancedTranscriptAnalyzer(keywordEngine, pipeline)
+        return enhancedAnalyzer.analyze(transcript)
     }
 }
