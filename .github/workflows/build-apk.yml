@@ -68,8 +68,8 @@ jobs:
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-unsigned
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk
 
   release:
     name: Create GitHub Release
@@ -102,5 +102,5 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release-unsigned.apk
+          files: app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true
