@@ -100,7 +100,7 @@ class TaskExtractionUseCase @Inject constructor(
             suggestion = suggestion.copy(
                 priority = priority,
                 whatsAppContext = whatsAppEvalResult.whatsAppContext,
-                autoApprove = whatsAppEvalResult.autoApprove,
+                autoApprove = suggestion.autoApprove || whatsAppEvalResult.autoApprove,
                 contactPriority = whatsAppEvalResult.contactPriority
             )
         }

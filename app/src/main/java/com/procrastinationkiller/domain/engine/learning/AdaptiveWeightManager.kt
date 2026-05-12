@@ -2,6 +2,8 @@ package com.procrastinationkiller.domain.engine.learning
 
 import com.procrastinationkiller.data.local.dao.LearningDataDao
 import com.procrastinationkiller.data.local.entity.LearningDataEntity
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,25 +22,36 @@ class AdaptiveWeightManager @Inject constructor(
         private const val MIN_CONFIDENCE_THRESHOLD = 0.3f
     }
 
-    // In-memory caches for fast access
-    private val keywordWeights = mutableMapOf<String, Float>()
-    private val senderImportance = mutableMapOf<String, Float>()
-    private val appReliability = mutableMapOf<String, Float>()
+    // Thread-safe flag indicating whether initial load from DB has completed.
+    // Defaults to true so the manager is usable with defaults; set to false during loadFromDatabase.
+    private val loadingComplete = AtomicBoolean(true)
+
+    // Thread-safe in-memory caches for fast access
+    private val keywordWeights = ConcurrentHashMap<String, Float>()
+    private val senderImportance = ConcurrentHashMap<String, Float>()
+    private val appReliability = ConcurrentHashMap<String, Float>()
+    @Volatile
     private var confidenceThreshold = DEFAULT_CONFIDENCE_THRESHOLD
 
+    fun isLoadingComplete(): Boolean = loadingComplete.get()
+
     fun getKeywordBoost(keyword: String): Float {
+        if (!loadingComplete.get()) return DEFAULT_WEIGHT
         return keywordWeights[keyword.lowercase()] ?: DEFAULT_WEIGHT
     }
 
     fun getSenderImportance(sender: String): Float {
+        if (!loadingComplete.get()) return DEFAULT_WEIGHT
         return senderImportance[sender.lowercase()] ?: DEFAULT_WEIGHT
     }
 
     fun getAppReliability(app: String): Float {
+        if (!loadingComplete.get()) return DEFAULT_WEIGHT
         return appReliability[app.lowercase()] ?: DEFAULT_WEIGHT
     }
 
     fun getConfidenceThreshold(): Float {
+        if (!loadingComplete.get()) return DEFAULT_CONFIDENCE_THRESHOLD
         return confidenceThreshold
     }
 
@@ -84,6 +97,7 @@ class AdaptiveWeightManager @Inject constructor(
     }
 
     suspend fun loadFromDatabase() {
+        loadingComplete.set(false)
         val recentData = learningDataDao.getRecentDataList(1000)
         keywordWeights.clear()
         senderImportance.clear()
@@ -147,6 +161,8 @@ class AdaptiveWeightManager @Inject constructor(
                 else -> { /* no change */ }
             }
         }
+
+        loadingComplete.set(true)
     }
 
     private fun exponentialMovingAverage(current: Float, direction: Float): Float {
