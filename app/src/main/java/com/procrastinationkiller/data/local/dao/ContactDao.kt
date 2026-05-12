@@ -20,6 +20,27 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE id = :id")
     suspend fun getContactById(id: Long): ContactEntity?
 
+    @Query("SELECT * FROM contacts WHERE name = :name LIMIT 1")
+    suspend fun getContactByName(name: String): ContactEntity?
+
+    @Query("SELECT * FROM contacts WHERE priority = :priority ORDER BY name ASC")
+    fun getContactsByPriority(priority: String): Flow<List<ContactEntity>>
+
+    @Query("SELECT * FROM contacts WHERE priority = 'VIP' ORDER BY name ASC")
+    fun getVipContacts(): Flow<List<ContactEntity>>
+
+    @Query("SELECT * FROM contacts WHERE priority = 'IGNORE' ORDER BY name ASC")
+    fun getIgnoredContacts(): Flow<List<ContactEntity>>
+
+    @Query("UPDATE contacts SET priority = :priority WHERE id = :id")
+    suspend fun updatePriority(id: Long, priority: String)
+
+    @Query("UPDATE contacts SET autoApprove = :autoApprove WHERE id = :id")
+    suspend fun updateAutoApprove(id: Long, autoApprove: Boolean)
+
+    @Query("UPDATE contacts SET messageCount = messageCount + 1, lastMessageTimestamp = :timestamp WHERE id = :id")
+    suspend fun incrementMessageCount(id: Long, timestamp: Long = System.currentTimeMillis())
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertContact(contact: ContactEntity): Long
 

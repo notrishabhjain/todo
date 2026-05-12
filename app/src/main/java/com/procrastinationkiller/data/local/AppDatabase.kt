@@ -27,7 +27,7 @@ import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
         AnalyticsEntity::class,
         TaskSuggestionEntity::class
     ],
-    version = 2,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -1,5 +1,7 @@
 package com.procrastinationkiller.domain.model
 
+import com.procrastinationkiller.domain.engine.whatsapp.WhatsAppContext
+
 data class TaskSuggestion(
     val suggestedTitle: String,
     val description: String,
@@ -8,5 +10,8 @@ data class TaskSuggestion(
     val sourceApp: String,
     val sender: String,
     val originalText: String,
-    val confidence: Float
+    val confidence: Float,
+    val whatsAppContext: WhatsAppContext? = null,
+    val autoApprove: Boolean = false,
+    val contactPriority: ContactPriority? = null
 )

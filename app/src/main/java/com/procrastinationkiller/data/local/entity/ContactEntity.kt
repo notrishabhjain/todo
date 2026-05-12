@@ -10,5 +10,10 @@ data class ContactEntity(
     val name: String,
     val email: String? = null,
     val phone: String? = null,
-    val isEscalationTarget: Boolean = false
+    val isEscalationTarget: Boolean = false,
+    val priority: String = "NORMAL",
+    val autoApprove: Boolean = false,
+    val sourceApp: String = "",
+    val messageCount: Int = 0,
+    val lastMessageTimestamp: Long? = null
 )

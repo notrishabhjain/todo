@@ -1,5 +1,7 @@
 package com.procrastinationkiller.domain.engine
 
+import com.procrastinationkiller.domain.engine.learning.LearningEngine
+import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import javax.inject.Inject
@@ -7,7 +9,9 @@ import javax.inject.Singleton
 
 @Singleton
 class TaskExtractionEngine @Inject constructor(
-    private val keywordEngine: KeywordEngine
+    private val keywordEngine: KeywordEngine,
+    private val classificationPipeline: HybridClassificationPipeline? = null,
+    private val learningEngine: LearningEngine? = null
 ) {
 
     fun extract(
@@ -17,13 +21,29 @@ class TaskExtractionEngine @Inject constructor(
     ): TaskSuggestion? {
         val analysis = keywordEngine.analyze(text)
 
-        if (!analysis.isActionable) {
+        // Use hybrid pipeline if available
+        val hybridResult = classificationPipeline?.classify(text, analysis)
+
+        val isActionable = hybridResult?.isActionable ?: analysis.isActionable
+
+        if (!isActionable) {
             return null
         }
 
         val title = generateTitle(text, analysis)
-        val priority = determinePriority(analysis)
-        val confidence = calculateConfidence(analysis)
+        var priority = hybridResult?.finalPriority ?: determinePriority(analysis)
+        var confidence = hybridResult?.confidence ?: calculateConfidence(analysis)
+
+        // Apply learning adjustments if available
+        val learningAdjustment = learningEngine?.getAdaptedAnalysis(text, sender, sourceApp)
+        if (learningAdjustment != null) {
+            confidence = (confidence + learningAdjustment.confidenceBoost).coerceIn(0f, 1f)
+            if (learningAdjustment.priorityAdjustment != null &&
+                learningAdjustment.priorityAdjustment.ordinal > priority.ordinal
+            ) {
+                priority = learningAdjustment.priorityAdjustment
+            }
+        }
 
         return TaskSuggestion(
             suggestedTitle = title,
@@ -33,7 +53,8 @@ class TaskExtractionEngine @Inject constructor(
             sourceApp = sourceApp,
             sender = sender,
             originalText = text,
-            confidence = confidence
+            confidence = confidence,
+            autoApprove = learningAdjustment?.shouldAutoApprove == true && confidence > 0.9f
         )
     }
 
