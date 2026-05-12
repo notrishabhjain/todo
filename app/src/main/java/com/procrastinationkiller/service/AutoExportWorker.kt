@@ -56,9 +56,22 @@ class AutoExportWorker @AssistedInject constructor(
             val file = File(exportDir, fileName)
             file.writeText(result.content)
 
+            cleanupOldExports(exportDir, maxFilesToKeep = 7)
+
             Result.success()
         } catch (e: Exception) {
             Result.retry()
         }
+    }
+
+    private fun cleanupOldExports(exportDir: File, maxFilesToKeep: Int) {
+        val exportFiles = exportDir.listFiles { file ->
+            file.isFile && file.name.startsWith("tasks_backup_") && file.name.endsWith(".json")
+        } ?: return
+
+        if (exportFiles.size <= maxFilesToKeep) return
+
+        val sortedFiles = exportFiles.sortedByDescending { it.lastModified() }
+        sortedFiles.drop(maxFilesToKeep).forEach { it.delete() }
     }
 }

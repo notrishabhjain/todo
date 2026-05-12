@@ -1,7 +1,10 @@
 package com.procrastinationkiller.service
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -27,6 +30,7 @@ class DailyReportWorker @AssistedInject constructor(
 
     companion object {
         const val WORK_NAME = "daily_report_worker"
+        const val NOTIFICATION_ID = 3001
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<DailyReportWorker>(
@@ -45,7 +49,7 @@ class DailyReportWorker @AssistedInject constructor(
         return try {
             val tasks = taskRepository.getAllTasks().first()
             val report = generateReport(tasks)
-            sendEmailIntent(report)
+            postShareNotification(report)
             Result.success()
         } catch (e: Exception) {
             Result.retry()
@@ -87,17 +91,38 @@ class DailyReportWorker @AssistedInject constructor(
         }
     }
 
-    private fun sendEmailIntent(report: String) {
-        val intent = Intent(Intent.ACTION_SEND).apply {
+    private fun postShareNotification(report: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_SUBJECT, "Daily Productivity Report")
             putExtra(Intent.EXTRA_TEXT, report)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+        val chooserIntent = Intent.createChooser(shareIntent, "Share Daily Report")
+        chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            0,
+            chooserIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(
+            applicationContext,
+            NotificationChannelManager.CHANNEL_SYSTEM
+        )
+            .setContentTitle("Daily Report Ready")
+            .setContentText("Tap to share your productivity report")
+            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
         try {
-            applicationContext.startActivity(intent)
-        } catch (_: Exception) {
-            // No email app available or can't start activity from background
+            NotificationManagerCompat.from(applicationContext)
+                .notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // Notification permission not granted
         }
     }
 

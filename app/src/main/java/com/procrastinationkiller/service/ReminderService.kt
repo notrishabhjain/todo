@@ -6,6 +6,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.procrastinationkiller.data.repository.UserPreferencesRepository
 import com.procrastinationkiller.domain.engine.MotivationalMessageProvider
 import com.procrastinationkiller.domain.engine.ReminderScheduler
 import com.procrastinationkiller.domain.model.ReminderMode
@@ -34,6 +35,9 @@ class ReminderService : Service() {
 
     @Inject
     lateinit var notificationChannelManager: NotificationChannelManager
+
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -76,7 +80,11 @@ class ReminderService : Service() {
         val pendingTasks = tasks.filter { it.status == "PENDING" || it.status == "IN_PROGRESS" }
         val highPriorityCount = pendingTasks.count { it.priority == "HIGH" || it.priority == "CRITICAL" }
 
-        val mode = ReminderMode.AGGRESSIVE // Default mode, will be updated from preferences
+        val mode = try {
+            userPreferencesRepository.reminderMode.first()
+        } catch (_: Exception) {
+            ReminderMode.AGGRESSIVE
+        }
         val message = motivationalMessageProvider.getMessage(mode, pendingTasks.size, highPriorityCount)
         val title = motivationalMessageProvider.getNotificationTitle(mode)
 

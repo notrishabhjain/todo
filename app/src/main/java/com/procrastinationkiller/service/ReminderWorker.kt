@@ -8,6 +8,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.procrastinationkiller.data.repository.UserPreferencesRepository
 import com.procrastinationkiller.domain.engine.MotivationalMessageProvider
 import com.procrastinationkiller.domain.engine.ReminderScheduler
 import com.procrastinationkiller.domain.model.ReminderMode
@@ -24,7 +25,8 @@ class ReminderWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val taskRepository: TaskRepository,
     private val motivationalMessageProvider: MotivationalMessageProvider,
-    private val reminderScheduler: ReminderScheduler
+    private val reminderScheduler: ReminderScheduler,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
@@ -33,7 +35,11 @@ class ReminderWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
-        val mode = ReminderMode.NORMAL // Default, will be overridden by preferences
+        val mode = try {
+            userPreferencesRepository.reminderMode.first()
+        } catch (_: Exception) {
+            ReminderMode.NORMAL
+        }
         val hourOfDay = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
         if (!reminderScheduler.shouldShowReminder(mode, hourOfDay)) {

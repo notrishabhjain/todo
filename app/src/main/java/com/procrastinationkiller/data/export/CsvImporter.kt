@@ -1,11 +1,16 @@
 package com.procrastinationkiller.data.export
 
 import com.procrastinationkiller.data.local.entity.TaskEntity
+import com.procrastinationkiller.domain.model.TaskPriority
+import com.procrastinationkiller.domain.model.TaskStatus
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class CsvImporter @Inject constructor() {
+
+    private val validPriorities = TaskPriority.entries.map { it.name }.toSet()
+    private val validStatuses = TaskStatus.entries.map { it.name }.toSet()
 
     fun import(content: String): List<Result<TaskEntity>> {
         val lines = content.lines().filter { it.isNotBlank() }
@@ -30,11 +35,14 @@ class CsvImporter @Inject constructor() {
                 return Result.failure(IllegalArgumentException("Insufficient fields: expected at least 3, got ${fields.size}"))
             }
 
+            val rawPriority = fields.getOrElse(2) { "MEDIUM" }.uppercase().ifEmpty { "MEDIUM" }
+            val rawStatus = fields.getOrElse(3) { "PENDING" }.uppercase().ifEmpty { "PENDING" }
+
             val task = TaskEntity(
                 title = fields[0],
                 description = fields.getOrElse(1) { "" },
-                priority = fields.getOrElse(2) { "MEDIUM" }.uppercase().ifEmpty { "MEDIUM" },
-                status = fields.getOrElse(3) { "PENDING" }.uppercase().ifEmpty { "PENDING" },
+                priority = if (rawPriority in validPriorities) rawPriority else "MEDIUM",
+                status = if (rawStatus in validStatuses) rawStatus else "PENDING",
                 reminderMode = fields.getOrElse(4) { "NORMAL" }.ifEmpty { "NORMAL" },
                 deadline = fields.getOrElse(5) { "" }.toLongOrNull(),
                 createdAt = fields.getOrElse(6) { "" }.toLongOrNull() ?: System.currentTimeMillis(),

@@ -76,7 +76,22 @@ fun NavGraph(navController: NavHostController) {
             )
         }
         composable(Routes.ONBOARDING) {
+            val context = androidx.compose.ui.platform.LocalContext.current
             OnboardingScreen(
+                onRequestNotificationAccess = {
+                    val intent = android.content.Intent(
+                        android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
+                    )
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                },
+                onSelectApps = {
+                    val intent = android.content.Intent(
+                        android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
+                    )
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                },
                 onComplete = {
                     navController.navigate(Routes.DASHBOARD) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }

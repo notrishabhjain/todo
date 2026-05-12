@@ -1,5 +1,7 @@
 package com.procrastinationkiller.presentation.inbox
 
+import com.procrastinationkiller.data.local.dao.LearningDataDao
+import com.procrastinationkiller.data.local.entity.LearningDataEntity
 import com.procrastinationkiller.data.local.entity.TaskEntity
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
@@ -35,7 +37,7 @@ class InboxViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeTaskRepository()
         approveUseCase = ApproveTaskUseCase(fakeRepository)
-        rejectUseCase = RejectTaskUseCase()
+        rejectUseCase = RejectTaskUseCase(FakeLearningDataDao())
     }
 
     @AfterEach
@@ -161,6 +163,27 @@ class InboxViewModelTest {
         override suspend fun deleteTask(task: TaskEntity) {
             tasks.removeAll { it.id == task.id }
             tasksFlow.value = tasks.toList()
+        }
+    }
+
+    private class FakeLearningDataDao : LearningDataDao {
+        private val data = mutableListOf<LearningDataEntity>()
+        private var nextId = 1L
+
+        override fun getAllLearningData(): Flow<List<LearningDataEntity>> =
+            MutableStateFlow(data.toList())
+
+        override fun getLearningDataByLabel(label: String): Flow<List<LearningDataEntity>> =
+            MutableStateFlow(data.filter { it.label == label })
+
+        override suspend fun insertLearningData(data: LearningDataEntity): Long {
+            val id = nextId++
+            this.data.add(data.copy(id = id))
+            return id
+        }
+
+        override suspend fun deleteOldData(before: Long) {
+            data.removeAll { it.timestamp < before }
         }
     }
 }
