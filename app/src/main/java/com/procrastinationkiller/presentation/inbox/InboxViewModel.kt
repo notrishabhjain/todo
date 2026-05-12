@@ -2,6 +2,7 @@ package com.procrastinationkiller.presentation.inbox
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import com.procrastinationkiller.domain.usecase.ApproveTaskUseCase
@@ -10,6 +11,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,7 +25,8 @@ data class InboxUiState(
 @HiltViewModel
 class InboxViewModel @Inject constructor(
     private val approveTaskUseCase: ApproveTaskUseCase,
-    private val rejectTaskUseCase: RejectTaskUseCase
+    private val rejectTaskUseCase: RejectTaskUseCase,
+    private val taskSuggestionDao: TaskSuggestionDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InboxUiState())
@@ -34,14 +37,33 @@ class InboxViewModel @Inject constructor(
     }
 
     private fun loadSuggestions() {
-        // In a full implementation, suggestions would come from a database/repository
-        // For now we initialize with empty state
-        _uiState.update { it.copy(isLoading = false) }
+        viewModelScope.launch {
+            taskSuggestionDao.getByStatus("PENDING").collect { entities ->
+                val suggestions = entities.map { entity ->
+                    TaskSuggestion(
+                        suggestedTitle = entity.suggestedTitle,
+                        description = entity.description,
+                        priority = try {
+                            TaskPriority.valueOf(entity.priority)
+                        } catch (_: IllegalArgumentException) {
+                            TaskPriority.MEDIUM
+                        },
+                        dueDate = entity.dueDate,
+                        sourceApp = entity.sourceApp,
+                        sender = entity.sender,
+                        originalText = entity.originalText,
+                        confidence = entity.confidence
+                    )
+                }
+                _uiState.update { it.copy(suggestions = suggestions, isLoading = false) }
+            }
+        }
     }
 
     fun approveSuggestion(suggestion: TaskSuggestion) {
         viewModelScope.launch {
             approveTaskUseCase(suggestion)
+            updateSuggestionStatus(suggestion, "APPROVED")
             _uiState.update { state ->
                 state.copy(
                     suggestions = state.suggestions - suggestion,
@@ -54,6 +76,7 @@ class InboxViewModel @Inject constructor(
     fun rejectSuggestion(suggestion: TaskSuggestion) {
         viewModelScope.launch {
             rejectTaskUseCase(suggestion)
+            updateSuggestionStatus(suggestion, "REJECTED")
             _uiState.update { state ->
                 state.copy(
                     suggestions = state.suggestions - suggestion,
@@ -70,6 +93,7 @@ class InboxViewModel @Inject constructor(
         )
         viewModelScope.launch {
             approveTaskUseCase(edited)
+            updateSuggestionStatus(original, "APPROVED")
             _uiState.update { state ->
                 state.copy(
                     suggestions = state.suggestions - original,
@@ -86,6 +110,17 @@ class InboxViewModel @Inject constructor(
     fun addSuggestion(suggestion: TaskSuggestion) {
         _uiState.update { state ->
             state.copy(suggestions = state.suggestions + suggestion)
+        }
+    }
+
+    private suspend fun updateSuggestionStatus(suggestion: TaskSuggestion, status: String) {
+        val entities = taskSuggestionDao.getByStatus("PENDING").first()
+        val match = entities.find {
+            it.suggestedTitle == suggestion.suggestedTitle &&
+                it.originalText == suggestion.originalText
+        }
+        if (match != null) {
+            taskSuggestionDao.updateStatus(match.id, status)
         }
     }
 }

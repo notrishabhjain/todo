@@ -8,6 +8,10 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.procrastinationkiller.data.repository.UserPreferencesRepository
 import com.procrastinationkiller.domain.model.ReminderMode
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -16,6 +20,12 @@ import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
 
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface BootReceiverEntryPoint {
+        fun userPreferencesRepository(): UserPreferencesRepository
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
             scheduleReminderWork(context)
@@ -23,7 +33,11 @@ class BootReceiver : BroadcastReceiver() {
             val pendingResult = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    val prefsRepository = UserPreferencesRepository(context)
+                    val entryPoint = EntryPointAccessors.fromApplication(
+                        context.applicationContext,
+                        BootReceiverEntryPoint::class.java
+                    )
+                    val prefsRepository = entryPoint.userPreferencesRepository()
                     val mode = try {
                         prefsRepository.reminderMode.first()
                     } catch (_: Exception) {

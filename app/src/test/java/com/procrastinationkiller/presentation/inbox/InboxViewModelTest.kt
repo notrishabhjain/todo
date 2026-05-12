@@ -1,8 +1,10 @@
 package com.procrastinationkiller.presentation.inbox
 
 import com.procrastinationkiller.data.local.dao.LearningDataDao
+import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.data.local.entity.LearningDataEntity
 import com.procrastinationkiller.data.local.entity.TaskEntity
+import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import com.procrastinationkiller.domain.repository.TaskRepository
@@ -12,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -30,6 +33,7 @@ class InboxViewModelTest {
     private lateinit var fakeRepository: FakeTaskRepository
     private lateinit var approveUseCase: ApproveTaskUseCase
     private lateinit var rejectUseCase: RejectTaskUseCase
+    private lateinit var fakeSuggestionDao: FakeTaskSuggestionDao
     private lateinit var viewModel: InboxViewModel
 
     @BeforeEach
@@ -38,6 +42,7 @@ class InboxViewModelTest {
         fakeRepository = FakeTaskRepository()
         approveUseCase = ApproveTaskUseCase(fakeRepository)
         rejectUseCase = RejectTaskUseCase(FakeLearningDataDao())
+        fakeSuggestionDao = FakeTaskSuggestionDao()
     }
 
     @AfterEach
@@ -47,7 +52,7 @@ class InboxViewModelTest {
 
     @Test
     fun `initial state is not loading with empty suggestions`() = runTest {
-        viewModel = InboxViewModel(approveUseCase, rejectUseCase)
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao)
         advanceUntilIdle()
 
         assertEquals(false, viewModel.uiState.value.isLoading)
@@ -56,7 +61,7 @@ class InboxViewModelTest {
 
     @Test
     fun `addSuggestion adds to suggestions list`() = runTest {
-        viewModel = InboxViewModel(approveUseCase, rejectUseCase)
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao)
         advanceUntilIdle()
 
         val suggestion = createSuggestion("Test task", "whatsapp", "John")
@@ -68,7 +73,7 @@ class InboxViewModelTest {
 
     @Test
     fun `approveSuggestion removes from list and creates task`() = runTest {
-        viewModel = InboxViewModel(approveUseCase, rejectUseCase)
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao)
         advanceUntilIdle()
 
         val suggestion = createSuggestion("Approve this", "telegram", "Alice")
@@ -84,7 +89,7 @@ class InboxViewModelTest {
 
     @Test
     fun `rejectSuggestion removes from list`() = runTest {
-        viewModel = InboxViewModel(approveUseCase, rejectUseCase)
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao)
         advanceUntilIdle()
 
         val suggestion = createSuggestion("Reject this", "slack", "Bob")
@@ -99,7 +104,7 @@ class InboxViewModelTest {
 
     @Test
     fun `editSuggestion approves with modified values`() = runTest {
-        viewModel = InboxViewModel(approveUseCase, rejectUseCase)
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao)
         advanceUntilIdle()
 
         val suggestion = createSuggestion("Original title", "gmail", "Carol")
@@ -114,7 +119,7 @@ class InboxViewModelTest {
 
     @Test
     fun `clearMessage sets message to null`() = runTest {
-        viewModel = InboxViewModel(approveUseCase, rejectUseCase)
+        viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao)
         advanceUntilIdle()
 
         val suggestion = createSuggestion("Test", "app", "User")
@@ -140,6 +145,33 @@ class InboxViewModelTest {
         originalText = "Original notification text",
         confidence = 0.8f
     )
+
+    private class FakeTaskSuggestionDao : TaskSuggestionDao {
+        private val suggestions = MutableStateFlow<List<TaskSuggestionEntity>>(emptyList())
+        private var nextId = 1L
+
+        override suspend fun insert(suggestion: TaskSuggestionEntity): Long {
+            val id = nextId++
+            val entity = suggestion.copy(id = id)
+            suggestions.value = suggestions.value + entity
+            return id
+        }
+
+        override fun getAll(): Flow<List<TaskSuggestionEntity>> = suggestions
+
+        override fun getByStatus(status: String): Flow<List<TaskSuggestionEntity>> =
+            suggestions.map { list -> list.filter { it.status == status } }
+
+        override suspend fun updateStatus(id: Long, status: String) {
+            suggestions.value = suggestions.value.map {
+                if (it.id == id) it.copy(status = status) else it
+            }
+        }
+
+        override suspend fun delete(id: Long) {
+            suggestions.value = suggestions.value.filter { it.id != id }
+        }
+    }
 
     private class FakeTaskRepository : TaskRepository {
         private val tasksFlow = MutableStateFlow<List<TaskEntity>>(emptyList())

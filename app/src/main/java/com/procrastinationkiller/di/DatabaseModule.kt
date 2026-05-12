@@ -9,6 +9,7 @@ import com.procrastinationkiller.data.local.dao.KeywordDao
 import com.procrastinationkiller.data.local.dao.LearningDataDao
 import com.procrastinationkiller.data.local.dao.NotificationDao
 import com.procrastinationkiller.data.local.dao.TaskDao
+import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,7 +28,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "procrastination_killer_db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
@@ -47,4 +48,7 @@ object DatabaseModule {
 
     @Provides
     fun provideAnalyticsDao(database: AppDatabase): AnalyticsDao = database.analyticsDao()
+
+    @Provides
+    fun provideTaskSuggestionDao(database: AppDatabase): TaskSuggestionDao = database.taskSuggestionDao()
 }

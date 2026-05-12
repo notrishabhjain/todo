@@ -92,6 +92,9 @@ fun NavGraph(navController: NavHostController) {
                     intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(intent)
                 },
+                onChooseAggressiveness = {
+                    navController.navigate(Routes.SETTINGS)
+                },
                 onComplete = {
                     navController.navigate(Routes.DASHBOARD) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }

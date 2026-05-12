@@ -1,7 +1,9 @@
 package com.procrastinationkiller.domain.usecase
 
 import android.service.notification.StatusBarNotification
+import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.data.local.entity.NotificationEntity
+import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
 import com.procrastinationkiller.data.parser.NotificationParser
 import com.procrastinationkiller.data.parser.WhatsAppHandler
 import com.procrastinationkiller.domain.engine.TaskExtractionEngine
@@ -15,7 +17,8 @@ class TaskExtractionUseCase @Inject constructor(
     private val notificationParser: NotificationParser,
     private val whatsAppHandler: WhatsAppHandler,
     private val taskExtractionEngine: TaskExtractionEngine,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val taskSuggestionDao: TaskSuggestionDao
 ) {
 
     suspend fun processNotification(sbn: StatusBarNotification): TaskSuggestion? {
@@ -50,6 +53,21 @@ class TaskExtractionUseCase @Inject constructor(
             sourceApp = parsed.packageName,
             sender = sender
         )
+
+        // Persist the suggestion to the database if one was extracted
+        if (suggestion != null) {
+            val entity = TaskSuggestionEntity(
+                suggestedTitle = suggestion.suggestedTitle,
+                description = suggestion.description,
+                priority = suggestion.priority.name,
+                dueDate = suggestion.dueDate,
+                sourceApp = suggestion.sourceApp,
+                sender = suggestion.sender,
+                originalText = suggestion.originalText,
+                confidence = suggestion.confidence
+            )
+            taskSuggestionDao.insert(entity)
+        }
 
         // Mark notification as processed
         notificationRepository.updateNotification(
