@@ -3,6 +3,7 @@ package com.procrastinationkiller.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.procrastinationkiller.data.local.dao.AnalyticsDao
+import com.procrastinationkiller.data.local.dao.BehaviorPatternDao
 import com.procrastinationkiller.data.local.dao.ContactDao
 import com.procrastinationkiller.data.local.dao.KeywordDao
 import com.procrastinationkiller.data.local.dao.LearningDataDao
@@ -10,6 +11,7 @@ import com.procrastinationkiller.data.local.dao.NotificationDao
 import com.procrastinationkiller.data.local.dao.TaskDao
 import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.data.local.entity.AnalyticsEntity
+import com.procrastinationkiller.data.local.entity.BehaviorPatternEntity
 import com.procrastinationkiller.data.local.entity.ContactEntity
 import com.procrastinationkiller.data.local.entity.KeywordEntity
 import com.procrastinationkiller.data.local.entity.LearningDataEntity
@@ -25,9 +27,10 @@ import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
         LearningDataEntity::class,
         KeywordEntity::class,
         AnalyticsEntity::class,
-        TaskSuggestionEntity::class
+        TaskSuggestionEntity::class,
+        BehaviorPatternEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,4 +41,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun keywordDao(): KeywordDao
     abstract fun analyticsDao(): AnalyticsDao
     abstract fun taskSuggestionDao(): TaskSuggestionDao
+    abstract fun behaviorPatternDao(): BehaviorPatternDao
 }

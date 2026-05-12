@@ -2,8 +2,10 @@ package com.procrastinationkiller.domain.engine
 
 import com.procrastinationkiller.domain.engine.learning.LearningEngine
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
+import com.procrastinationkiller.domain.engine.prioritization.SmartPrioritizationEngine
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,7 +13,8 @@ import javax.inject.Singleton
 class TaskExtractionEngine @Inject constructor(
     private val keywordEngine: KeywordEngine,
     private val classificationPipeline: HybridClassificationPipeline? = null,
-    private val learningEngine: LearningEngine? = null
+    private val learningEngine: LearningEngine? = null,
+    private val smartPrioritizationEngine: SmartPrioritizationEngine? = null
 ) {
 
     fun extract(
@@ -42,6 +45,22 @@ class TaskExtractionEngine @Inject constructor(
                 learningAdjustment.priorityAdjustment.ordinal > priority.ordinal
             ) {
                 priority = learningAdjustment.priorityAdjustment
+            }
+        }
+
+        // Apply smart prioritization if available
+        if (smartPrioritizationEngine != null) {
+            val prioritizationResult = runBlocking {
+                smartPrioritizationEngine.evaluate(
+                    text = text,
+                    sender = sender,
+                    sourceApp = sourceApp,
+                    currentPriority = priority,
+                    deadlineMs = analysis.resolvedDueDate
+                )
+            }
+            if (prioritizationResult.shouldEscalate) {
+                priority = prioritizationResult.priority
             }
         }
 
