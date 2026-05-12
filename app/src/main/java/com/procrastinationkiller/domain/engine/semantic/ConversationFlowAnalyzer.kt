@@ -9,6 +9,7 @@ class ConversationFlowAnalyzer @Inject constructor() {
 
     companion object {
         private const val MAX_MESSAGES_PER_SENDER = 5
+        private const val MAX_SENDER_ENTRIES = 100
         private val PRONOUN_REFERENCES = setOf(
             "that thing", "it", "the same", "that", "this",
             "woh", "wo", "yeh", "ye", "wahi"
@@ -21,6 +22,7 @@ class ConversationFlowAnalyzer @Inject constructor() {
     }
 
     private val conversationHistory = ConcurrentHashMap<String, MutableList<MessageContext>>()
+    private val accessOrder = java.util.concurrent.ConcurrentLinkedDeque<String>()
 
     fun addMessage(sender: String, text: String, timestamp: Long = System.currentTimeMillis()) {
         val key = sender.lowercase()
@@ -40,6 +42,11 @@ class ConversationFlowAnalyzer @Inject constructor() {
                 messages.removeAt(0)
             }
         }
+
+        // Update LRU access order and evict if over capacity
+        accessOrder.remove(key)
+        accessOrder.addLast(key)
+        evictIfNeeded()
     }
 
     fun resolveContext(sender: String, currentText: String): MessageContext? {
@@ -68,6 +75,14 @@ class ConversationFlowAnalyzer @Inject constructor() {
 
     fun clear() {
         conversationHistory.clear()
+        accessOrder.clear()
+    }
+
+    private fun evictIfNeeded() {
+        while (conversationHistory.size > MAX_SENDER_ENTRIES) {
+            val oldest = accessOrder.pollFirst() ?: break
+            conversationHistory.remove(oldest)
+        }
     }
 
     private fun extractActionVerbs(text: String): List<String> {

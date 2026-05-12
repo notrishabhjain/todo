@@ -5,6 +5,7 @@ import com.procrastinationkiller.data.parser.NotificationParser
 import com.procrastinationkiller.domain.engine.KeywordEngine
 import com.procrastinationkiller.domain.engine.TaskExtractionEngine
 import com.procrastinationkiller.domain.model.TaskPriority
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -26,7 +27,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `English actionable notification produces task suggestion`() {
+    fun `English actionable notification produces task suggestion`() = runBlocking {
         val text = "Please send the quarterly report by end of day"
         val suggestion = extractionEngine.extract(text, "com.whatsapp", "Boss")
 
@@ -38,7 +39,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Hindi actionable notification produces task suggestion`() {
+    fun `Hindi actionable notification produces task suggestion`() = runBlocking {
         val text = "Bhai kal tak report bhej dena jaldi"
         val suggestion = extractionEngine.extract(text, "com.whatsapp", "Rahul")
 
@@ -48,7 +49,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Hinglish urgent notification gets high priority`() {
+    fun `Hinglish urgent notification gets high priority`() = runBlocking {
         val text = "Urgent hai, deploy karna hai aaj hi"
         val suggestion = extractionEngine.extract(text, "com.slack", "TeamLead")
 
@@ -57,7 +58,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Non-actionable notification returns null`() {
+    fun `Non-actionable notification returns null`() = runBlocking {
         val text = "Good morning! Hope you have a great day"
         val suggestion = extractionEngine.extract(text, "com.whatsapp", "Friend")
 
@@ -65,7 +66,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Multiple action keywords increase confidence`() {
+    fun `Multiple action keywords increase confidence`() = runBlocking {
         val text = "Review and submit the PR before deploying to production"
         val suggestion = extractionEngine.extract(text, "com.github", "CI Bot")
 
@@ -74,7 +75,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Notification with time indicator gets due date`() {
+    fun `Notification with time indicator gets due date`() = runBlocking {
         val text = "Please complete the task by tomorrow morning"
         val suggestion = extractionEngine.extract(text, "com.gmail", "Manager")
 
@@ -83,7 +84,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Full pipeline from notification text to task fields`() {
+    fun `Full pipeline from notification text to task fields`() = runBlocking {
         val notifText = "Hey, can you review the design docs and send feedback by Friday?"
         val sender = parser.extractSender("Design Team", notifText, AppType.WHATSAPP, false)
 
@@ -99,7 +100,7 @@ class NotificationToTaskPipelineTest {
     }
 
     @Test
-    fun `Hinglish mixed text extracts correctly`() {
+    fun `Hinglish mixed text extracts correctly`() = runBlocking {
         val text = "Yaar check karna database issue, shaam tak fix kar dena"
         val suggestion = extractionEngine.extract(text, "com.telegram", "DevOps")
 

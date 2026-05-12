@@ -94,7 +94,7 @@ class TaskExtractionUseCase @Inject constructor(
         // Apply WhatsApp intelligence enhancements
         if (suggestion != null && whatsAppEvalResult != null) {
             val override = whatsAppEvalResult.priorityOverride
-            val priority = if (override != null && override.ordinal < suggestion.priority.ordinal) {
+            val priority = if (override != null && override.ordinal > suggestion.priority.ordinal) {
                 override
             } else {
                 suggestion.priority
@@ -124,6 +124,9 @@ class TaskExtractionUseCase @Inject constructor(
 
             // Check for duplicates using semantic deduplication
             if (semanticDeduplicator != null) {
+                // Note: Queries all pending suggestions on every notification. This is acceptable
+                // at current scale (typical users have <100 pending suggestions). If this grows
+                // significantly, consider adding a limit or indexing by sender.
                 val pendingSuggestions = taskSuggestionDao.getByStatus("PENDING").first()
                 val deduplicationResult = semanticDeduplicator.checkDuplicate(
                     newText = suggestion.originalText,

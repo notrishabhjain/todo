@@ -1,6 +1,7 @@
 package com.procrastinationkiller.domain.engine
 
 import com.procrastinationkiller.domain.model.TaskPriority
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -21,7 +22,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `extracts task from Hinglish message with time indicator`() {
+    fun `extracts task from Hinglish message with time indicator`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "Bhai kal tak proposal bhej dena",
             sourceApp = "com.whatsapp",
@@ -53,7 +54,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `extracts task from English urgent message`() {
+    fun `extracts task from English urgent message`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "Urgent: Please review the PR and deploy to staging",
             sourceApp = "com.slack",
@@ -68,7 +69,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `returns null for non-actionable message`() {
+    fun `returns null for non-actionable message`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "Good morning everyone!",
             sourceApp = "com.whatsapp",
@@ -79,7 +80,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `assigns CRITICAL priority with multiple urgency indicators`() {
+    fun `assigns CRITICAL priority with multiple urgency indicators`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "Urgent! Send the report ASAP, this is high priority",
             sourceApp = "com.google.android.gm",
@@ -92,7 +93,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `assigns MEDIUM priority with no urgency and no time`() {
+    fun `assigns MEDIUM priority with no urgency and no time`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "Can you check the logs when you get a chance",
             sourceApp = "com.slack",
@@ -105,7 +106,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `preserves original text in suggestion`() {
+    fun `preserves original text in suggestion`() = runBlocking {
         val originalText = "Please submit the document by tomorrow"
         val suggestion = extractionEngine.extract(
             text = originalText,
@@ -119,7 +120,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `confidence score increases with more signals`() {
+    fun `confidence score increases with more signals`() = runBlocking {
         val weakSuggestion = extractionEngine.extract(
             text = "Send the file",
             sourceApp = "com.whatsapp",
@@ -138,7 +139,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `extracts task from Hinglish with urgency`() {
+    fun `extracts task from Hinglish with urgency`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "Jaldi check karna aaj hi report",
             sourceApp = "com.whatsapp",
@@ -151,7 +152,7 @@ class TaskExtractionEngineTest {
     }
 
     @Test
-    fun `handles empty text gracefully`() {
+    fun `handles empty text gracefully`() = runBlocking {
         val suggestion = extractionEngine.extract(
             text = "",
             sourceApp = "com.whatsapp",

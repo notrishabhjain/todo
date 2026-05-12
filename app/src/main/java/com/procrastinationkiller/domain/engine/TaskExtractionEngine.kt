@@ -6,7 +6,6 @@ import com.procrastinationkiller.domain.engine.prioritization.SmartPrioritizatio
 import com.procrastinationkiller.domain.engine.semantic.SemanticUnderstandingEngine
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +18,7 @@ class TaskExtractionEngine @Inject constructor(
     private val semanticUnderstandingEngine: SemanticUnderstandingEngine? = null
 ) {
 
-    fun extract(
+    suspend fun extract(
         text: String,
         sourceApp: String = "",
         sender: String = ""
@@ -71,15 +70,13 @@ class TaskExtractionEngine @Inject constructor(
 
         // Apply smart prioritization if available
         if (smartPrioritizationEngine != null) {
-            val prioritizationResult = runBlocking {
-                smartPrioritizationEngine.evaluate(
-                    text = text,
-                    sender = sender,
-                    sourceApp = sourceApp,
-                    currentPriority = priority,
-                    deadlineMs = analysis.resolvedDueDate
-                )
-            }
+            val prioritizationResult = smartPrioritizationEngine.evaluate(
+                text = text,
+                sender = sender,
+                sourceApp = sourceApp,
+                currentPriority = priority,
+                deadlineMs = analysis.resolvedDueDate
+            )
             if (prioritizationResult.shouldEscalate) {
                 priority = prioritizationResult.priority
             }
