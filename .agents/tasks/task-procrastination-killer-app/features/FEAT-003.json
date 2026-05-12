@@ -1,0 +1,44 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Implement the complete Task Management UI with Jetpack Compose: Dashboard screen (pending tasks, high priority, quick stats), Inbox screen (AI-suggested tasks awaiting approval with approve/reject actions), Tasks List screen (with filters by priority, source, sender, due date), and Task Detail screen. Also implement the approval workflow where users can approve, reject, or edit suggested tasks.",
+  "status": "completed",
+  "steps": [
+    "Create DashboardViewModel at app/src/main/java/com/procrastinationkiller/presentation/dashboard/DashboardViewModel.kt with state for pending task count, high priority count, completion rate, today's tasks",
+    "Create DashboardScreen composable at app/src/main/java/com/procrastinationkiller/presentation/dashboard/DashboardScreen.kt with: pending tasks summary card, high priority tasks section, quick stats (completed today, completion rate), motivational message area",
+    "Create InboxViewModel at app/src/main/java/com/procrastinationkiller/presentation/inbox/InboxViewModel.kt managing pending task suggestions with approve/reject/edit actions",
+    "Create InboxScreen composable at app/src/main/java/com/procrastinationkiller/presentation/inbox/InboxScreen.kt showing task suggestion cards with: suggested title, source app icon, sender name, original notification text, priority badge, due date, and action buttons (Approve, Reject, Edit, Auto-Approve for Contact)",
+    "Create TaskSuggestionCard composable at app/src/main/java/com/procrastinationkiller/presentation/inbox/components/TaskSuggestionCard.kt - the approval card with swipe gestures (swipe right to approve, left to reject)",
+    "Create TasksListViewModel at app/src/main/java/com/procrastinationkiller/presentation/tasks/TasksListViewModel.kt with filtering by priority, source app, sender, due date, and status",
+    "Create TasksListScreen composable at app/src/main/java/com/procrastinationkiller/presentation/tasks/TasksListScreen.kt with filter chips, sorted task list, pull-to-refresh, and FAB for manual task creation",
+    "Create TaskDetailViewModel at app/src/main/java/com/procrastinationkiller/presentation/taskdetail/TaskDetailViewModel.kt for viewing/editing a single task",
+    "Create TaskDetailScreen composable at app/src/main/java/com/procrastinationkiller/presentation/taskdetail/TaskDetailScreen.kt showing: full task info, original notification text, source app, sender, timestamp, edit fields, status change buttons (Complete, Delete, Archive), priority selector, due date picker, notes field",
+    "Create ManualTaskCreateDialog composable at app/src/main/java/com/procrastinationkiller/presentation/tasks/components/ManualTaskCreateDialog.kt for manually adding tasks with title, description, priority, due date",
+    "Create ApproveTaskUseCase at app/src/main/java/com/procrastinationkiller/domain/usecase/ApproveTaskUseCase.kt that converts a TaskSuggestion into a confirmed Task in the database",
+    "Create RejectTaskUseCase at app/src/main/java/com/procrastinationkiller/domain/usecase/RejectTaskUseCase.kt that marks a suggestion as rejected and stores the feedback for learning",
+    "Create GetTasksUseCase at app/src/main/java/com/procrastinationkiller/domain/usecase/GetTasksUseCase.kt with filtering and sorting options",
+    "Create UpdateTaskUseCase at app/src/main/java/com/procrastinationkiller/domain/usecase/UpdateTaskUseCase.kt for status changes, edits, priority changes",
+    "Update NavGraph.kt to wire all screens with proper navigation arguments (task ID for detail screen)",
+    "Add bottom navigation bar to MainActivity with icons for Dashboard, Inbox, Tasks, Settings tabs",
+    "Create shared UI components in app/src/main/java/com/procrastinationkiller/presentation/components/: PriorityBadge.kt, SourceAppIcon.kt, TaskCard.kt, FilterChips.kt, EmptyStateView.kt",
+    "Create unit tests for ViewModels at app/src/test/java/com/procrastinationkiller/presentation/ testing state management and use case interactions"
+  ],
+  "acceptance_criteria": [
+    "Dashboard shows pending task count, high priority count, and completion stats",
+    "Inbox displays task suggestions with approve/reject/edit actions",
+    "Tasks list supports filtering by priority, source, sender, and due date",
+    "Task detail screen shows complete task info with edit capabilities",
+    "Navigation between all screens works via bottom nav bar",
+    "Manual task creation dialog allows adding tasks with all fields",
+    "Approve action converts suggestion to confirmed task",
+    "Reject action records feedback for future learning",
+    "Project compiles with gradle assembleDebug",
+    "Unit tests pass for ViewModels"
+  ],
+  "verification": [
+    "export PATH=/root/.local/share/mise/installs/gradle/8.14.4/gradle-8.14.4/bin:$PATH && gradle testDebugUnitTest --no-daemon 2>&1 | tail -30",
+    "export PATH=/root/.local/share/mise/installs/gradle/8.14.4/gradle-8.14.4/bin:$PATH && gradle assembleDebug --no-daemon 2>&1 | tail -10"
+  ],
+  "blocked_reason": null,
+  "findings": "All 61 tests pass (38 existing + 23 new). Build compiles cleanly with no errors. Used AutoMirrored icons for ArrowBack and List to avoid deprecation warnings. Added compose-material-icons-extended dependency for full icon support. NavGraph now accepts NavHostController parameter from MainActivity to support bottom navigation. TaskSuggestion inbox uses in-memory state since suggestions come from the notification capture flow rather than persisted storage."
+}
