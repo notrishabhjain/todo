@@ -44,9 +44,11 @@ class ConversationFlowAnalyzer @Inject constructor() {
         }
 
         // Update LRU access order and evict if over capacity
-        accessOrder.remove(key)
-        accessOrder.addLast(key)
-        evictIfNeeded()
+        synchronized(this) {
+            accessOrder.remove(key)
+            accessOrder.addLast(key)
+            evictIfNeeded()
+        }
     }
 
     fun resolveContext(sender: String, currentText: String): MessageContext? {

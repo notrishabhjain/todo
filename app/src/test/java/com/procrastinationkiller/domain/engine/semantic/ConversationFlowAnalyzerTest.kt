@@ -3,6 +3,7 @@ package com.procrastinationkiller.domain.engine.semantic
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -92,5 +93,47 @@ class ConversationFlowAnalyzerTest {
 
         val messages = analyzer.getRecentMessages("boss")
         assertEquals(1, messages.size)
+    }
+
+    @Test
+    fun `LRU eviction removes oldest-accessed sender when exceeding 100 entries`() {
+        // Add 101 distinct senders
+        for (i in 1..101) {
+            analyzer.addMessage("Sender$i", "message from sender $i", i.toLong())
+        }
+
+        // The first sender (oldest-accessed) should have been evicted
+        val evictedMessages = analyzer.getRecentMessages("Sender1")
+        assertTrue(evictedMessages.isEmpty(), "Sender1 should have been evicted as the oldest-accessed entry")
+
+        // The most recent senders should still be present
+        val recentMessages = analyzer.getRecentMessages("Sender101")
+        assertEquals(1, recentMessages.size, "Sender101 should still be present")
+
+        // Sender2 should still be present (it was added second, so after eviction of Sender1, it stays)
+        val sender2Messages = analyzer.getRecentMessages("Sender2")
+        assertEquals(1, sender2Messages.size, "Sender2 should still be present after only Sender1 was evicted")
+    }
+
+    @Test
+    fun `LRU eviction respects access order not insertion order`() {
+        // Add 100 distinct senders
+        for (i in 1..100) {
+            analyzer.addMessage("Sender$i", "message from sender $i", i.toLong())
+        }
+
+        // Access Sender1 again to make it most recently used
+        analyzer.addMessage("Sender1", "another message", 200L)
+
+        // Add a new sender to trigger eviction
+        analyzer.addMessage("NewSender", "new message", 300L)
+
+        // Sender1 should NOT be evicted because it was most recently accessed
+        val sender1Messages = analyzer.getRecentMessages("Sender1")
+        assertTrue(sender1Messages.isNotEmpty(), "Sender1 should not be evicted since it was recently accessed")
+
+        // Sender2 should be evicted as the oldest-accessed entry
+        val sender2Messages = analyzer.getRecentMessages("Sender2")
+        assertTrue(sender2Messages.isEmpty(), "Sender2 should have been evicted as the oldest-accessed entry")
     }
 }

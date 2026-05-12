@@ -143,8 +143,8 @@ class TaskExtractionUseCase @Inject constructor(
                         } catch (_: IllegalArgumentException) {
                             TaskPriority.MEDIUM
                         }
-                        if (suggestion.priority.ordinal < existingPriority.ordinal) {
-                            // Higher priority (lower ordinal) - update existing
+                        if (suggestion.priority.ordinal > existingPriority.ordinal) {
+                            // Higher priority (higher ordinal) - update existing
                             taskSuggestionDao.insert(
                                 existingEntity.copy(priority = suggestion.priority.name)
                             )
