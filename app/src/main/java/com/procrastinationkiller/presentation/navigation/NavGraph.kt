@@ -1,11 +1,6 @@
 package com.procrastinationkiller.presentation.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,6 +8,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.procrastinationkiller.presentation.dashboard.DashboardScreen
 import com.procrastinationkiller.presentation.inbox.InboxScreen
+import com.procrastinationkiller.presentation.onboarding.OnboardingScreen
+import com.procrastinationkiller.presentation.settings.KeywordManagementScreen
+import com.procrastinationkiller.presentation.settings.SettingsScreen
 import com.procrastinationkiller.presentation.taskdetail.TaskDetailScreen
 import com.procrastinationkiller.presentation.tasks.TasksListScreen
 
@@ -22,6 +20,8 @@ object Routes {
     const val TASKS = "tasks"
     const val TASK_DETAIL = "task_detail/{taskId}"
     const val SETTINGS = "settings"
+    const val KEYWORD_MANAGEMENT = "keyword_management"
+    const val ONBOARDING = "onboarding"
 
     fun taskDetail(taskId: Long): String = "task_detail/$taskId"
 }
@@ -58,17 +58,25 @@ fun NavGraph(navController: NavHostController) {
             )
         }
         composable(Routes.SETTINGS) {
-            PlaceholderScreen("Settings")
+            SettingsScreen(
+                onNavigateToKeywords = {
+                    navController.navigate(Routes.KEYWORD_MANAGEMENT)
+                }
+            )
         }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = name)
+        composable(Routes.KEYWORD_MANAGEMENT) {
+            KeywordManagementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onComplete = {
+                    navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }

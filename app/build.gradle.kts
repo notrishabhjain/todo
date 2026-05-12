@@ -85,6 +85,11 @@ dependencies {
 
     // WorkManager
     implementation(libs.workmanager)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
+
+    // DataStore
+    implementation(libs.datastore.preferences)
 
     // Kotlin
     implementation(libs.kotlinx.serialization.json)
