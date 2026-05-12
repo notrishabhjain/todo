@@ -3,8 +3,10 @@ package com.procrastinationkiller.presentation.inbox
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
+import com.procrastinationkiller.domain.model.ContactPriority
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
+import com.procrastinationkiller.domain.repository.ContactRepository
 import com.procrastinationkiller.domain.usecase.ApproveTaskUseCase
 import com.procrastinationkiller.domain.usecase.RejectTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +28,8 @@ data class InboxUiState(
 class InboxViewModel @Inject constructor(
     private val approveTaskUseCase: ApproveTaskUseCase,
     private val rejectTaskUseCase: RejectTaskUseCase,
-    private val taskSuggestionDao: TaskSuggestionDao
+    private val taskSuggestionDao: TaskSuggestionDao,
+    private val contactRepository: ContactRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InboxUiState())
@@ -55,7 +58,17 @@ class InboxViewModel @Inject constructor(
                         confidence = entity.confidence
                     )
                 }
-                _uiState.update { it.copy(suggestions = suggestions, isLoading = false) }
+
+                // Process auto-approve suggestions
+                val autoApproved = suggestions.filter { it.autoApprove }
+                val remaining = suggestions.filter { !it.autoApprove }
+
+                autoApproved.forEach { suggestion ->
+                    approveTaskUseCase(suggestion)
+                    updateSuggestionStatus(suggestion, "APPROVED")
+                }
+
+                _uiState.update { it.copy(suggestions = remaining, isLoading = false) }
             }
         }
     }
@@ -99,6 +112,31 @@ class InboxViewModel @Inject constructor(
                     suggestions = state.suggestions - original,
                     message = "Task saved: $editedTitle"
                 )
+            }
+        }
+    }
+
+    fun setContactAutoApprove(suggestion: TaskSuggestion, autoApprove: Boolean) {
+        viewModelScope.launch {
+            val contactName = suggestion.whatsAppContext?.senderName ?: suggestion.sender
+            val contact = contactRepository?.getContactByName(contactName)
+            if (contact != null) {
+                contactRepository?.updateAutoApprove(contact.id, autoApprove)
+                _uiState.update { state ->
+                    state.copy(message = "Auto-approve ${if (autoApprove) "enabled" else "disabled"} for $contactName")
+                }
+            }
+        }
+    }
+
+    fun setContactPriority(contactName: String, priority: ContactPriority) {
+        viewModelScope.launch {
+            val contact = contactRepository?.getContactByName(contactName)
+            if (contact != null) {
+                contactRepository?.updatePriority(contact.id, priority.name)
+                _uiState.update { state ->
+                    state.copy(message = "Priority set to ${priority.displayName} for $contactName")
+                }
             }
         }
     }
