@@ -1,0 +1,42 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Implement Persistent Anti-Procrastination Reminder system using WorkManager and Foreground Service. Includes configurable reminder modes (Aggressive, Balanced, Minimal), customizable frequency, non-dismissible persistent notifications showing pending high-priority tasks, and motivational language. Also implement Settings screen for configuring reminder behavior, VIP contacts, and keyword management.",
+  "status": "completed",
+  "steps": [
+    "Create ReminderService as a Foreground Service at app/src/main/java/com/procrastinationkiller/service/ReminderService.kt that shows persistent non-dismissible notification with pending task summary and motivational text",
+    "Create ReminderWorker at app/src/main/java/com/procrastinationkiller/service/ReminderWorker.kt using WorkManager for periodic reminders based on configured frequency (15min, 30min, hourly, morning+evening only)",
+    "Create ReminderScheduler at app/src/main/java/com/procrastinationkiller/domain/engine/ReminderScheduler.kt that manages reminder scheduling based on mode: Aggressive (every 15 min with escalating language), Balanced (every 30 min), Minimal (morning + evening only)",
+    "Create MotivationalMessageProvider at app/src/main/java/com/procrastinationkiller/domain/engine/MotivationalMessageProvider.kt with a bank of motivational and accountability-oriented messages that rotate based on time of day and task urgency",
+    "Create NotificationChannelManager at app/src/main/java/com/procrastinationkiller/service/NotificationChannelManager.kt to set up notification channels for: task reminders (high importance, persistent), task suggestions (default importance), system notifications",
+    "Create BootReceiver at app/src/main/java/com/procrastinationkiller/service/BootReceiver.kt that restarts the reminder service and re-schedules WorkManager jobs after device reboot",
+    "Register BootReceiver in AndroidManifest.xml with BOOT_COMPLETED intent filter",
+    "Create SettingsViewModel at app/src/main/java/com/procrastinationkiller/presentation/settings/SettingsViewModel.kt managing all user preferences",
+    "Create SettingsScreen composable at app/src/main/java/com/procrastinationkiller/presentation/settings/SettingsScreen.kt with sections: Reminder Settings (mode selector, frequency selector), Notification Settings (which apps to monitor), VIP Contacts (priority contact list), Keyword Management (add/remove action/urgency/time keywords), Export/Import, About",
+    "Create UserPreferencesRepository at app/src/main/java/com/procrastinationkiller/data/repository/UserPreferencesRepository.kt using DataStore Preferences for storing: reminder mode, frequency, monitored apps, theme preference",
+    "Create VIP Contact management - add ContactPriority enum (VIP, HighPriority, Normal, Ignore) and UI for managing contact priorities in Settings",
+    "Create KeywordManagementScreen at app/src/main/java/com/procrastinationkiller/presentation/settings/KeywordManagementScreen.kt for adding/removing/editing custom keywords in each category (action, urgency, time)",
+    "Create OnboardingScreen at app/src/main/java/com/procrastinationkiller/presentation/onboarding/OnboardingScreen.kt that guides user through: granting notification access permission, selecting apps to monitor, choosing reminder aggressiveness, optional biometric lock setup",
+    "Wire the onboarding flow to show on first launch and redirect to system settings for notification listener permission",
+    "Create unit tests for ReminderScheduler and MotivationalMessageProvider at app/src/test/java/com/procrastinationkiller/domain/engine/",
+    "Create unit tests for UserPreferencesRepository behavior"
+  ],
+  "acceptance_criteria": [
+    "Persistent notification shows current pending tasks with motivational message",
+    "Reminder frequency is configurable: 15min, 30min, hourly, morning+evening",
+    "Three reminder modes work: Aggressive, Balanced, Minimal",
+    "Boot receiver restarts reminder service after reboot",
+    "Settings screen allows configuring all reminder options",
+    "VIP contact system allows marking contacts with priority levels",
+    "Custom keywords can be added/removed through settings UI",
+    "Onboarding flow guides user through permission setup",
+    "WorkManager jobs are properly scheduled and survive app restart",
+    "Project compiles and unit tests pass"
+  ],
+  "verification": [
+    "export PATH=/root/.local/share/mise/installs/gradle/8.14.4/gradle-8.14.4/bin:$PATH && gradle testDebugUnitTest --no-daemon 2>&1 | tail -30",
+    "export PATH=/root/.local/share/mise/installs/gradle/8.14.4/gradle-8.14.4/bin:$PATH && gradle assembleDebug --no-daemon 2>&1 | tail -10"
+  ],
+  "blocked_reason": null,
+  "findings": "All 101 tests pass (61 existing + 40 new). Build compiles cleanly. Added DataStore Preferences and Hilt WorkManager (hilt-work) dependencies. Used @ExperimentalFoundationApi OptIn for HorizontalPager in OnboardingScreen since Compose BOM 2024.02.00 still has pager as experimental. The existing ReminderMode enum (GENTLE, NORMAL, AGGRESSIVE, NUCLEAR) was kept as-is since it was defined in FEAT-001 and maps well to the feature requirements (Gentle=Minimal, Normal=Balanced, Aggressive=Aggressive). ContactPriority enum added separately from existing ContactEntity which already had isEscalationTarget field. ReminderWorker uses @HiltWorker with @AssistedInject for proper Hilt WorkManager integration."
+}
