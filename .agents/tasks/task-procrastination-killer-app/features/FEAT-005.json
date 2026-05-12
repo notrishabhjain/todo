@@ -1,0 +1,43 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Implement Analytics, Export/Import, Meeting Transcript parsing, and final integration testing. This covers the remaining Phase 1 features: task history with productivity insights, CSV/JSON export-import, meeting transcript paste-and-parse screen, and comprehensive unit tests to validate the complete system.",
+  "status": "completed",
+  "steps": [
+    "Create AnalyticsViewModel at app/src/main/java/com/procrastinationkiller/presentation/analytics/AnalyticsViewModel.kt computing: completed today/week/month, pending backlog, completion rate, most ignored tasks, productivity trends",
+    "Create AnalyticsScreen composable at app/src/main/java/com/procrastinationkiller/presentation/analytics/AnalyticsScreen.kt with charts for productivity trends, filter by time range (hour, day, week, month, custom), completion rate display, most ignored tasks list",
+    "Create AnalyticsUseCase at app/src/main/java/com/procrastinationkiller/domain/usecase/AnalyticsUseCase.kt that queries task history and computes statistics",
+    "Create ExportImportService at app/src/main/java/com/procrastinationkiller/data/export/ExportImportService.kt supporting CSV and JSON formats. Export fields: title, description, source app, sender, created date, due date, priority, status, tags, notes, original notification text",
+    "Create CsvExporter and JsonExporter at app/src/main/java/com/procrastinationkiller/data/export/ using Apache Commons CSV and kotlinx.serialization respectively",
+    "Create CsvImporter and JsonImporter at app/src/main/java/com/procrastinationkiller/data/export/ that parse imported files and create tasks",
+    "Create ExportImportScreen composable at app/src/main/java/com/procrastinationkiller/presentation/settings/ExportImportScreen.kt with manual export button, import file picker, scheduled auto-export toggle",
+    "Create MeetingTranscriptViewModel at app/src/main/java/com/procrastinationkiller/presentation/transcript/MeetingTranscriptViewModel.kt that accepts pasted text and runs task extraction",
+    "Create MeetingTranscriptScreen composable at app/src/main/java/com/procrastinationkiller/presentation/transcript/MeetingTranscriptScreen.kt with large text input area, Analyze button, results showing extracted action items with owner detection if possible, and bulk approve/reject",
+    "Create TranscriptAnalyzer at app/src/main/java/com/procrastinationkiller/domain/engine/TranscriptAnalyzer.kt that splits transcript by speakers/sentences, runs keyword engine on each segment, detects action item owners from context (e.g., '@person will do X' or 'Person, please do X')",
+    "Add navigation routes for Analytics and MeetingTranscript screens to NavGraph.kt",
+    "Create scheduled auto-export WorkManager job at app/src/main/java/com/procrastinationkiller/service/AutoExportWorker.kt",
+    "Create DailyReportWorker at app/src/main/java/com/procrastinationkiller/service/DailyReportWorker.kt that generates daily summary and sends via email intent (ACTION_SEND) with: tasks completed, pending tasks, high priority pending, productivity summary, completion percentage",
+    "Create comprehensive integration-style unit tests at app/src/test/java/com/procrastinationkiller/ testing: full notification-to-task pipeline, export/import round-trip, transcript analysis with Hindi/English/Hinglish input, analytics calculations",
+    "Create sample keyword dataset JSON file at app/src/main/assets/default_keywords.json with all the keywords from the requirements organized by category",
+    "Create a demo data generator utility at app/src/main/java/com/procrastinationkiller/util/DemoDataGenerator.kt that populates the database with sample tasks, notifications, and analytics for testing/demo purposes"
+  ],
+  "acceptance_criteria": [
+    "Analytics screen shows completion stats with time range filtering",
+    "CSV export produces valid CSV file with all task fields",
+    "JSON export produces valid JSON with all task fields",
+    "Import correctly creates tasks from CSV and JSON files",
+    "Meeting transcript screen extracts action items from pasted text",
+    "Transcript analysis works with English, Hindi, and Hinglish text",
+    "Daily report worker generates summary email intent",
+    "Auto-export worker runs on configured schedule",
+    "Demo data generator creates realistic sample data",
+    "All unit tests pass",
+    "Full project compiles successfully"
+  ],
+  "verification": [
+    "export PATH=/root/.local/share/mise/installs/gradle/8.14.4/gradle-8.14.4/bin:$PATH && gradle testDebugUnitTest --no-daemon 2>&1 | tail -30",
+    "export PATH=/root/.local/share/mise/installs/gradle/8.14.4/gradle-8.14.4/bin:$PATH && gradle assembleDebug --no-daemon 2>&1 | tail -10"
+  ],
+  "blocked_reason": null,
+  "findings": "All 150 tests pass (101 existing + 49 new). Build compiles cleanly. Used manual StringBuilder-based CSV writing since Apache Commons CSV is not in libs.versions.toml. Used kotlinx.serialization for JSON export/import. Used Compose Canvas for the productivity chart. TranscriptAnalyzer reuses KeywordEngine for multilingual support. The assignment pattern uses {2,} minimum word length to avoid matching pronouns like 'I' as owners. NotificationParser.parse() requires StatusBarNotification (Android framework), so integration test uses extractSender() directly instead."
+}
