@@ -1,5 +1,6 @@
 package com.procrastinationkiller.domain.engine
 
+import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import javax.inject.Inject
@@ -7,7 +8,8 @@ import javax.inject.Singleton
 
 @Singleton
 class TaskExtractionEngine @Inject constructor(
-    private val keywordEngine: KeywordEngine
+    private val keywordEngine: KeywordEngine,
+    private val classificationPipeline: HybridClassificationPipeline? = null
 ) {
 
     fun extract(
@@ -17,13 +19,18 @@ class TaskExtractionEngine @Inject constructor(
     ): TaskSuggestion? {
         val analysis = keywordEngine.analyze(text)
 
-        if (!analysis.isActionable) {
+        // Use hybrid pipeline if available
+        val hybridResult = classificationPipeline?.classify(text, analysis)
+
+        val isActionable = hybridResult?.isActionable ?: analysis.isActionable
+
+        if (!isActionable) {
             return null
         }
 
         val title = generateTitle(text, analysis)
-        val priority = determinePriority(analysis)
-        val confidence = calculateConfidence(analysis)
+        val priority = hybridResult?.finalPriority ?: determinePriority(analysis)
+        val confidence = hybridResult?.confidence ?: calculateConfidence(analysis)
 
         return TaskSuggestion(
             suggestedTitle = title,
