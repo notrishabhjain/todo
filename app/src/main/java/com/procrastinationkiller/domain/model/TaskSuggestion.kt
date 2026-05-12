@@ -8,5 +8,6 @@ data class TaskSuggestion(
     val sourceApp: String,
     val sender: String,
     val originalText: String,
-    val confidence: Float
+    val confidence: Float,
+    val shouldAutoApprove: Boolean = false
 )

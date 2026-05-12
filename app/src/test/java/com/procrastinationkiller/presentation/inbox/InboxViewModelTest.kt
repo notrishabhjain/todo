@@ -217,5 +217,28 @@ class InboxViewModelTest {
         override suspend fun deleteOldData(before: Long) {
             data.removeAll { it.timestamp < before }
         }
+
+        override suspend fun getBySourceApp(app: String): List<LearningDataEntity> =
+            data.filter { it.sourceApp == app }
+
+        override suspend fun getBySender(sender: String): List<LearningDataEntity> =
+            data.filter { it.sender == sender }
+
+        override suspend fun getByFeedbackType(type: String): List<LearningDataEntity> =
+            data.filter { it.feedbackType == type }
+
+        override suspend fun getRecentDataList(limit: Int): List<LearningDataEntity> =
+            data.sortedByDescending { it.timestamp }.take(limit)
+
+        override suspend fun getCountByLabel(label: String): Int =
+            data.count { it.label == label }
+
+        override suspend fun deleteOldest(keepCount: Int) {
+            if (data.size > keepCount) {
+                val sorted = data.sortedByDescending { it.timestamp }
+                data.clear()
+                data.addAll(sorted.take(keepCount))
+            }
+        }
     }
 }

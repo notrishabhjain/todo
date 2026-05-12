@@ -2,13 +2,17 @@ package com.procrastinationkiller.domain.usecase
 
 import com.procrastinationkiller.data.local.dao.LearningDataDao
 import com.procrastinationkiller.data.local.entity.LearningDataEntity
+import com.procrastinationkiller.domain.engine.learning.LearningEngine
+import com.procrastinationkiller.domain.engine.learning.LearningEvent
+import com.procrastinationkiller.domain.engine.learning.UserFeedbackType
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class RejectTaskUseCase @Inject constructor(
-    private val learningDataDao: LearningDataDao
+    private val learningDataDao: LearningDataDao,
+    private val learningEngine: LearningEngine? = null
 ) {
 
     suspend operator fun invoke(suggestion: TaskSuggestion): RejectionResult {
@@ -28,11 +32,31 @@ class RejectTaskUseCase @Inject constructor(
         )
         learningDataDao.insertLearningData(learningData)
 
+        // Record structured learning feedback
+        learningEngine?.recordFeedback(
+            LearningEvent(
+                feedbackType = UserFeedbackType.REJECTED,
+                originalText = suggestion.originalText,
+                sourceApp = suggestion.sourceApp,
+                sender = suggestion.sender,
+                suggestedPriority = suggestion.priority,
+                keywords = extractKeywords(suggestion.originalText),
+                confidence = suggestion.confidence
+            )
+        )
+
         return RejectionResult(
             rejectedTitle = suggestion.suggestedTitle,
             sourceApp = suggestion.sourceApp,
             sender = suggestion.sender
         )
+    }
+
+    private fun extractKeywords(text: String): List<String> {
+        return text.lowercase()
+            .split("\\s+".toRegex())
+            .filter { it.length > 3 }
+            .take(10)
     }
 }
 
