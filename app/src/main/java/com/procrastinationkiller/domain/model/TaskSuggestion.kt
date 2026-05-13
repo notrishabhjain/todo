@@ -3,6 +3,7 @@ package com.procrastinationkiller.domain.model
 import com.procrastinationkiller.domain.engine.whatsapp.WhatsAppContext
 
 data class TaskSuggestion(
+    val id: Long = 0,
     val suggestedTitle: String,
     val description: String,
     val priority: TaskPriority,

@@ -13,7 +13,8 @@ data class ParsedNotification(
     val timestamp: Long,
     val isGroupMessage: Boolean,
     val conversationTitle: String?,
-    val appType: AppType
+    val appType: AppType,
+    val category: String? = null
 )
 
 enum class AppType {
@@ -39,6 +40,7 @@ class NotificationParser @Inject constructor() {
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
         val conversationTitle = extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)?.toString()
         val timestamp = sbn.postTime
+        val category = notification.category
 
         val appType = resolveAppType(packageName)
         val isGroupMessage = conversationTitle != null
@@ -52,7 +54,8 @@ class NotificationParser @Inject constructor() {
             timestamp = timestamp,
             isGroupMessage = isGroupMessage,
             conversationTitle = conversationTitle,
-            appType = appType
+            appType = appType,
+            category = category
         )
     }
 

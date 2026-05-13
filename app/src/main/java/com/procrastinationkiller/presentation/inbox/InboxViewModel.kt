@@ -47,6 +47,7 @@ class InboxViewModel @Inject constructor(
             taskSuggestionDao.getByStatus("PENDING").collect { entities ->
                 val suggestions = entities.map { entity ->
                     TaskSuggestion(
+                        id = entity.id,
                         suggestedTitle = entity.suggestedTitle,
                         description = entity.description,
                         priority = try {
@@ -160,6 +161,10 @@ class InboxViewModel @Inject constructor(
     }
 
     private suspend fun updateSuggestionStatus(suggestion: TaskSuggestion, status: String) {
+        if (suggestion.id != 0L) {
+            taskSuggestionDao.updateStatus(suggestion.id, status)
+            return
+        }
         val entities = taskSuggestionDao.getByStatus("PENDING").first()
         val match = entities.find {
             it.suggestedTitle == suggestion.suggestedTitle &&

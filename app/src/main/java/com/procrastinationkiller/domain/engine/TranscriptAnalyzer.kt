@@ -135,7 +135,10 @@ class TranscriptAnalyzer @Inject constructor(
     companion object {
         private val SPEAKER_PATTERN = Regex("^(?:\\[?[\\d:.-]+\\]?[\\s-]*)?([A-Za-z][A-Za-z\\s]*)(?:\\s*\\[?[\\d:.-]*\\]?)?:\\s*")
         private val TIMESTAMP_PATTERN = Regex("^\\s*(?:\\[?\\d{1,2}[:.]\\d{2}(?:[:.]\\d{2})?\\]?[\\s-]*)(?:\\s*-\\s*)?")
-        private val FILLER_WORDS_PATTERN = Regex(",?\\s*\\b(?:um|uh|you know|like)\\b,?\\s*", RegexOption.IGNORE_CASE)
+        private val FILLER_WORDS_PATTERN = Regex(",?\\s*\\b(?:um|uh|you know)\\b,?\\s*", RegexOption.IGNORE_CASE)
+        // "like" is only stripped when surrounded by commas (filler usage: ", like,")
+        // to avoid removing "like" as a verb (e.g., "I'd like to schedule")
+        private val FILLER_LIKE_PATTERN = Regex(",\\s*\\blike\\b\\s*,", RegexOption.IGNORE_CASE)
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")
@@ -153,7 +156,10 @@ class TranscriptAnalyzer @Inject constructor(
         }
 
         fun removeFillerWords(text: String): String {
-            return FILLER_WORDS_PATTERN.replace(text, " ").replace(Regex("\\s{2,}"), " ").trim()
+            // First remove "like" only when used as a filler (between commas)
+            val withoutLike = FILLER_LIKE_PATTERN.replace(text, " ")
+            // Then remove other unconditional filler words
+            return FILLER_WORDS_PATTERN.replace(withoutLike, " ").replace(Regex("\\s{2,}"), " ").trim()
         }
     }
 

@@ -60,7 +60,7 @@ fun InboxScreen(
                 )
             }
         } else {
-            items(uiState.suggestions, key = { it.suggestedTitle + it.originalText }) { suggestion ->
+            items(uiState.suggestions, key = { it.id }) { suggestion ->
                 val dismissState = rememberSwipeToDismissBoxState(
                     confirmValueChange = { value ->
                         when (value) {

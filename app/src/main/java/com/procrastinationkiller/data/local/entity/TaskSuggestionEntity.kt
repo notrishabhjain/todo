@@ -1,9 +1,13 @@
 package com.procrastinationkiller.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "task_suggestions")
+@Entity(
+    tableName = "task_suggestions",
+    indices = [Index(value = ["contentHash"])]
+)
 data class TaskSuggestionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

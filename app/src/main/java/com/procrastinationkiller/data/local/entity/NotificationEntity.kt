@@ -1,9 +1,13 @@
 package com.procrastinationkiller.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "notifications")
+@Entity(
+    tableName = "notifications",
+    indices = [Index(value = ["notificationKey"])]
+)
 data class NotificationEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

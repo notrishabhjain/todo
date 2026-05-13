@@ -49,7 +49,7 @@ class TaskExtractionUseCase @Inject constructor(
                 packageName = parsed.packageName,
                 title = parsed.title,
                 text = parsed.text,
-                category = null,
+                category = parsed.category,
                 timestamp = parsed.timestamp
             )
             if (missedCall != null) {
@@ -186,7 +186,12 @@ class TaskExtractionUseCase @Inject constructor(
 
         // Persist the suggestion to the database if one was extracted
         if (suggestion != null) {
-            // Check for duplicates using content hash (covers ALL statuses)
+            // Check for duplicates using content hash (covers ALL statuses).
+            // Note: computeNotificationKey hashes packageName+title+content verbatim.
+            // If the notification system re-posts with slightly different content
+            // (e.g., appended count or timestamp), the key will differ. This is an
+            // acceptable tradeoff -- exact-match dedup catches most re-posts, and
+            // the semantic deduplicator below catches near-duplicates for non-VIP flow.
             val contentHash = computeContentHash(suggestion.sender, suggestion.originalText, suggestion.sourceApp)
             val existingByHash = taskSuggestionDao.findByContentHash(contentHash)
             if (existingByHash != null) {
@@ -195,6 +200,40 @@ class TaskExtractionUseCase @Inject constructor(
                     notificationEntity.copy(id = notificationId, isProcessed = true)
                 )
                 return null
+            }
+
+            // Semantic deduplication: check for near-duplicate suggestions across all statuses
+            // This runs before the VIP/non-VIP branch to prevent VIP contacts from creating
+            // duplicate tasks when sending semantically identical messages with different wording.
+            if (semanticDeduplicator != null) {
+                val pendingSuggestions = taskSuggestionDao.getByStatus("PENDING").first()
+                val deduplicationResult = semanticDeduplicator.checkDuplicate(
+                    newText = suggestion.originalText,
+                    newSender = suggestion.sender,
+                    existingSuggestions = pendingSuggestions
+                )
+
+                if (deduplicationResult.isDuplicate && deduplicationResult.existingTaskId != null) {
+                    // If new message has higher priority, update existing
+                    val existingEntity = pendingSuggestions.find { it.id == deduplicationResult.existingTaskId }
+                    if (existingEntity != null) {
+                        val existingPriority = try {
+                            TaskPriority.valueOf(existingEntity.priority)
+                        } catch (_: IllegalArgumentException) {
+                            TaskPriority.MEDIUM
+                        }
+                        if (suggestion.priority.ordinal > existingPriority.ordinal) {
+                            taskSuggestionDao.insert(
+                                existingEntity.copy(priority = suggestion.priority.name)
+                            )
+                        }
+                    }
+                    // Skip insertion for duplicate
+                    notificationRepository.updateNotification(
+                        notificationEntity.copy(id = notificationId, isProcessed = true)
+                    )
+                    return null
+                }
             }
 
             val entity = TaskSuggestionEntity(
@@ -216,37 +255,7 @@ class TaskExtractionUseCase @Inject constructor(
                 taskSuggestionDao.insert(approvedEntity)
                 approveTaskUseCase.invoke(suggestion)
             } else {
-                // Check for duplicates using semantic deduplication
-                if (semanticDeduplicator != null) {
-                    val pendingSuggestions = taskSuggestionDao.getByStatus("PENDING").first()
-                    val deduplicationResult = semanticDeduplicator.checkDuplicate(
-                        newText = suggestion.originalText,
-                        newSender = suggestion.sender,
-                        existingSuggestions = pendingSuggestions
-                    )
-
-                    if (deduplicationResult.isDuplicate && deduplicationResult.existingTaskId != null) {
-                        // If new message has higher priority, update existing
-                        val existingEntity = pendingSuggestions.find { it.id == deduplicationResult.existingTaskId }
-                        if (existingEntity != null) {
-                            val existingPriority = try {
-                                TaskPriority.valueOf(existingEntity.priority)
-                            } catch (_: IllegalArgumentException) {
-                                TaskPriority.MEDIUM
-                            }
-                            if (suggestion.priority.ordinal > existingPriority.ordinal) {
-                                taskSuggestionDao.insert(
-                                    existingEntity.copy(priority = suggestion.priority.name)
-                                )
-                            }
-                        }
-                        // Skip insertion for duplicate
-                    } else {
-                        taskSuggestionDao.insert(entity)
-                    }
-                } else {
-                    taskSuggestionDao.insert(entity)
-                }
+                taskSuggestionDao.insert(entity)
             }
         }
 
