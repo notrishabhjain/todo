@@ -25,7 +25,10 @@ class InstalledAppsProvider @Inject constructor(
         val installedApps = packageManager.getInstalledApplications(0)
 
         return installedApps
-            .filter { appInfo -> !isSystemApp(appInfo) }
+            .filter { appInfo ->
+                packageManager.getLaunchIntentForPackage(appInfo.packageName) != null &&
+                    appInfo.packageName != context.packageName
+            }
             .map { appInfo ->
                 InstalledAppInfo(
                     packageName = appInfo.packageName,
@@ -35,13 +38,6 @@ class InstalledAppsProvider @Inject constructor(
                 )
             }
             .sortedBy { it.label.lowercase() }
-    }
-
-    private fun isSystemApp(appInfo: ApplicationInfo): Boolean {
-        if (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0) {
-            return false
-        }
-        return appInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0
     }
 
     private fun categorizeApp(appInfo: ApplicationInfo): AppCategory {

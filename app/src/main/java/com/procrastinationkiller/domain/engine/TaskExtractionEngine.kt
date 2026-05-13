@@ -1,5 +1,7 @@
 package com.procrastinationkiller.domain.engine
 
+import android.util.Log
+import com.procrastinationkiller.BuildConfig
 import com.procrastinationkiller.domain.engine.learning.LearningEngine
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.engine.prioritization.SmartPrioritizationEngine
@@ -23,6 +25,10 @@ class TaskExtractionEngine @Inject constructor(
         sourceApp: String = "",
         sender: String = ""
     ): TaskSuggestion? {
+        if (BuildConfig.DEBUG) {
+            Log.d("TaskExtraction", "Processing: text='${text.take(50)}', sourceApp=$sourceApp, sender=$sender, pipelineAvailable=${classificationPipeline != null}")
+        }
+
         // Run semantic understanding FIRST to short-circuit on negation/questions
         val semanticResult = semanticUnderstandingEngine?.analyze(text, sender, sourceApp)
         if (semanticResult != null) {
@@ -41,7 +47,10 @@ class TaskExtractionEngine @Inject constructor(
         // Use hybrid pipeline if available
         val hybridResult = classificationPipeline?.classify(text, analysis)
 
-        val isActionable = hybridResult?.isActionable ?: analysis.isActionable
+        val isActionable = (hybridResult?.isActionable ?: false) || analysis.isActionable
+        if (BuildConfig.DEBUG) {
+            Log.d("TaskExtraction", "Actionability: hybridResult=${hybridResult?.isActionable}, keywordActionable=${analysis.isActionable}, final=$isActionable, source=${hybridResult?.source}")
+        }
 
         if (!isActionable) {
             return null

@@ -29,7 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,6 +56,11 @@ fun TasksListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val hapticFeedback = LocalHapticFeedback.current
+    var dismissedTaskIds by remember { mutableStateOf(setOf<Long>()) }
+
+    LaunchedEffect(uiState.tasks) {
+        dismissedTaskIds = emptySet()
+    }
 
     LaunchedEffect(uiState.snackbarMessage) {
         uiState.snackbarMessage?.let { message ->
@@ -115,11 +122,13 @@ fun TasksListScreen(
                     )
                 }
             } else {
-                items(uiState.tasks, key = { it.id }) { task ->
+                val displayedTasks = uiState.tasks.filter { it.id !in dismissedTaskIds }
+                items(displayedTasks, key = { it.id }) { task ->
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { value ->
                             if (value == SwipeToDismissBoxValue.StartToEnd) {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                dismissedTaskIds = dismissedTaskIds + task.id
                                 viewModel.completeTask(task.id)
                                 true
                             } else {

@@ -18,6 +18,9 @@ interface TaskSuggestionDao {
     @Query("SELECT * FROM task_suggestions WHERE status = :status ORDER BY createdAt DESC")
     fun getByStatus(status: String): Flow<List<TaskSuggestionEntity>>
 
+    @Query("SELECT * FROM task_suggestions WHERE status = :status AND autoApprove = 0 ORDER BY createdAt DESC")
+    fun getPendingNonAutoApprove(status: String): Flow<List<TaskSuggestionEntity>>
+
     @Query("UPDATE task_suggestions SET status = :status WHERE id = :id")
     suspend fun updateStatus(id: Long, status: String)
 

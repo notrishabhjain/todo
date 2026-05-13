@@ -143,7 +143,7 @@ class TranscriptAnalyzer @Inject constructor(
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")
-        private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please|ko bol do|se karwao|ko bolo|se kaho|ko assign karo)\\s+")
+        private val HINDI_ASSIGNMENT_PATTERN = Regex("([\\w\\u0900-\\u097F]{2,})\\s+(?:ko|se|please|ko bol do|se karwao|ko bolo|se kaho|ko assign karo)\\s+")
 
         fun stripTimestamps(line: String): String {
             // Strip leading timestamps in formats: [HH:MM:SS], [HH:MM], HH:MM:SS -, HH:MM -, (HH:MM:SS), (HH:MM)

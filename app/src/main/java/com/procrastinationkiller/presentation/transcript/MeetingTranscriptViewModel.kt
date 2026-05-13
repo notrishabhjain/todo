@@ -20,7 +20,8 @@ data class MeetingTranscriptUiState(
     val isAnalyzing: Boolean = false,
     val isAnalyzed: Boolean = false,
     val approvedCount: Int = 0,
-    val rejectedCount: Int = 0
+    val rejectedCount: Int = 0,
+    val errorMessage: String? = null
 )
 
 data class ActionItemUi(
@@ -50,13 +51,26 @@ class MeetingTranscriptViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isAnalyzing = true)
 
         viewModelScope.launch {
-            val items = transcriptAnalyzer.enhancedAnalyze(text, hybridClassificationPipeline)
-            _uiState.value = _uiState.value.copy(
-                actionItems = items.map { ActionItemUi(it) },
-                isAnalyzing = false,
-                isAnalyzed = true
-            )
+            try {
+                val items = transcriptAnalyzer.enhancedAnalyze(text, hybridClassificationPipeline)
+                _uiState.value = _uiState.value.copy(
+                    actionItems = items.map { ActionItemUi(it) },
+                    isAnalyzing = false,
+                    isAnalyzed = true,
+                    errorMessage = null
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isAnalyzing = false,
+                    isAnalyzed = false,
+                    errorMessage = "Failed to analyze transcript: ${e.message ?: "Unknown error"}"
+                )
+            }
         }
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 
     fun approveItem(index: Int) {

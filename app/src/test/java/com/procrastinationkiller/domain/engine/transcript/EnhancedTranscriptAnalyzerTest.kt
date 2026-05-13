@@ -205,4 +205,17 @@ class EnhancedTranscriptAnalyzerTest {
         assertTrue(items.isNotEmpty())
         assertEquals("Rahul", items.first().owner)
     }
+
+    @Test
+    fun `does not crash on Devanagari transcript with bold speakers`() {
+        val analyzerNoPipeline = EnhancedTranscriptAnalyzer(keywordEngine, null)
+        val transcript = """
+            [00:01:00] **\u0930\u093E\u0939\u0941\u0932:** \u0915\u0932 \u0924\u0915 report bhej dena jaldi
+            [00:01:05] **\u092A\u094D\u0930\u093F\u092F\u093E:** Check karna hai database issue urgent hai
+        """.trimIndent()
+
+        // Should not throw any exception
+        val items = analyzerNoPipeline.analyze(transcript)
+        assertNotNull(items)
+    }
 }

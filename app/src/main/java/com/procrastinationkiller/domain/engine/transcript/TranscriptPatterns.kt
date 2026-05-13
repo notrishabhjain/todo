@@ -14,5 +14,5 @@ object TranscriptPatterns {
      *
      * Captures the speaker name in group 1 (without surrounding asterisks or timestamps).
      */
-    val SPEAKER_PATTERN = Regex("^(?:\\[?\\d{1,2}[:.\\-]\\d{2}(?:[:.\\-]\\d{2})?\\]?\\s*[-]?\\s*)?\\*{0,2}([A-Za-z][A-Za-z0-9\\s]*?)\\*{0,2}\\s*:\\s*")
+    val SPEAKER_PATTERN = Regex("^(?:\\[?\\d{1,2}[:.\\-]\\d{2}(?:[:.\\-]\\d{2})?\\]?\\s*[-]?\\s*)?\\*{0,2}([A-Za-z\\u0900-\\u097F][A-Za-z0-9\\u0900-\\u097F\\s]*?)\\*{0,2}\\s*:\\s*")
 }

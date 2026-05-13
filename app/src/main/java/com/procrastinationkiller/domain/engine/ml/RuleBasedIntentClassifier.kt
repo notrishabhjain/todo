@@ -1,5 +1,7 @@
 package com.procrastinationkiller.domain.engine.ml
 
+import android.util.Log
+import com.procrastinationkiller.BuildConfig
 import com.procrastinationkiller.domain.model.TaskPriority
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,8 +28,12 @@ class RuleBasedIntentClassifier @Inject constructor() : IntentClassifier {
         val avgWordLenNorm = features[6]
         val capsRatio = features[7]
 
+        if (BuildConfig.DEBUG) {
+            Log.d("RuleBasedClassifier", "Classifying: actionVerbDensity=$actionVerbDensity, urgencyDensity=$urgencyDensity, timeRef=$timeRefNorm")
+        }
+
         // Classify based on feature thresholds
-        return when {
+        val result = when {
             // Meeting: time references present with action verbs
             timeRefNorm > 0.3f && actionVerbDensity > 0.05f && hasMeetingSignal(actionVerbDensity, timeRefNorm) -> {
                 val confidence = ((timeRefNorm + actionVerbDensity) / 2f).coerceAtMost(0.9f)
@@ -96,6 +102,11 @@ class RuleBasedIntentClassifier @Inject constructor() : IntentClassifier {
                 )
             }
         }
+
+        if (BuildConfig.DEBUG) {
+            Log.d("RuleBasedClassifier", "Result: intent=${result.intent}, isActionable=${result.isActionable}, confidence=${result.confidence}")
+        }
+        return result
     }
 
     private fun hasMeetingSignal(actionVerbDensity: Float, timeRefNorm: Float): Boolean {
