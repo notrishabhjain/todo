@@ -102,15 +102,6 @@ class TaskExtractionUseCase @Inject constructor(
     suspend fun processNotification(sbn: StatusBarNotification, sbnKey: String? = null): TaskSuggestion? {
         val parsed = notificationParser.parse(sbn)
 
-        // sbnKey-based dedup: skip if this sbnKey was already processed within last hour
-        if (sbnKey != null) {
-            val oneHourAgo = System.currentTimeMillis() - 3_600_000L
-            val count = notificationDao.countBySbnKeyInLastHour(sbnKey, oneHourAgo)
-            if (count > 0) {
-                return null
-            }
-        }
-
         // Check for duplicate notification by key (packageName + title + content)
         val notificationKey = computeNotificationKey(parsed.packageName, parsed.title, parsed.text)
         val alreadyProcessedCount = notificationRepository.countProcessedByKey(notificationKey)
@@ -227,6 +218,16 @@ class TaskExtractionUseCase @Inject constructor(
             sender = parsed.sender
         }
 
+        // sbnKey-based dedup: skip for VIP auto-approve (WhatsApp), apply for others
+        val isVipAutoApprove = whatsAppEvalResult?.autoApprove == true
+        if (!isVipAutoApprove && sbnKey != null) {
+            val oneHourAgo = System.currentTimeMillis() - 3_600_000L
+            val count = notificationDao.countBySbnKeyInLastHour(sbnKey, oneHourAgo)
+            if (count > 0) {
+                return null
+            }
+        }
+
         // Store notification in DB
         val notificationEntity = NotificationEntity(
             packageName = parsed.packageName,
@@ -289,14 +290,27 @@ class TaskExtractionUseCase @Inject constructor(
             )
         }
 
+        // VIP FORCE-CREATE: If VIP contact's message didn't produce a suggestion via keyword/ML,
+        // create one anyway using the raw message text
+        if (suggestion == null && whatsAppEvalResult?.autoApprove == true) {
+            suggestion = TaskSuggestion(
+                suggestedTitle = textToAnalyze.take(60),
+                description = textToAnalyze,
+                priority = TaskPriority.HIGH,
+                dueDate = null,
+                sourceApp = parsed.packageName,
+                sender = sender,
+                originalText = textToAnalyze,
+                confidence = 1.0f,
+                autoApprove = true,
+                whatsAppContext = whatsAppEvalResult.whatsAppContext,
+                contactPriority = whatsAppEvalResult.contactPriority
+            )
+        }
+
         // Persist the suggestion to the database if one was extracted
         if (suggestion != null) {
             // Check for duplicates using content hash (covers ALL statuses).
-            // Note: computeNotificationKey hashes packageName+title+content verbatim.
-            // If the notification system re-posts with slightly different content
-            // (e.g., appended count or timestamp), the key will differ. This is an
-            // acceptable tradeoff -- exact-match dedup catches most re-posts, and
-            // the semantic deduplicator below catches near-duplicates for non-VIP flow.
             val contentHash = computeContentHash(suggestion.sender, suggestion.originalText, suggestion.sourceApp)
             val existingByHash = taskSuggestionDao.findByContentHash(contentHash)
             if (existingByHash != null) {
@@ -307,10 +321,9 @@ class TaskExtractionUseCase @Inject constructor(
                 return null
             }
 
-            // Semantic deduplication: check for near-duplicate suggestions across all statuses
-            // This runs before the VIP/non-VIP branch to prevent VIP contacts from creating
-            // duplicate tasks when sending semantically identical messages with different wording.
-            if (semanticDeduplicator != null) {
+            // Semantic deduplication: skip entirely for VIP auto-approve messages.
+            // Only exact content hash dedup (above) should remain for VIP.
+            if (suggestion.autoApprove != true && semanticDeduplicator != null) {
                 val tenMinutesAgo = System.currentTimeMillis() - 600_000L
                 val recentSuggestions = taskSuggestionDao.getAllRecentSuggestions(tenMinutesAgo)
                 val deduplicationResult = semanticDeduplicator.checkDuplicate(
@@ -389,10 +402,10 @@ class TaskExtractionUseCase @Inject constructor(
             text = line,
             sourceApp = packageName,
             sender = sender
-        ) ?: return null
+        )
 
         // Apply WhatsApp intelligence enhancements
-        if (whatsAppEvalResult != null) {
+        if (suggestion != null && whatsAppEvalResult != null) {
             val override = whatsAppEvalResult.priorityOverride
             val priority = if (override != null && override.ordinal > suggestion.priority.ordinal) {
                 override
@@ -407,13 +420,34 @@ class TaskExtractionUseCase @Inject constructor(
             )
         }
 
+        // VIP FORCE-CREATE: If VIP contact's message line didn't produce a suggestion,
+        // create one anyway using the raw line text
+        if (suggestion == null && whatsAppEvalResult?.autoApprove == true) {
+            suggestion = TaskSuggestion(
+                suggestedTitle = line.take(60),
+                description = line,
+                priority = TaskPriority.HIGH,
+                dueDate = null,
+                sourceApp = packageName,
+                sender = sender,
+                originalText = line,
+                confidence = 1.0f,
+                autoApprove = true,
+                whatsAppContext = whatsAppEvalResult.whatsAppContext,
+                contactPriority = whatsAppEvalResult.contactPriority
+            )
+        }
+
+        if (suggestion == null) return null
+
         val contentHash = computeContentHash(suggestion.sender, suggestion.originalText, suggestion.sourceApp)
         val existingByHash = taskSuggestionDao.findByContentHash(contentHash)
         if (existingByHash != null) {
             return null
         }
 
-        if (semanticDeduplicator != null) {
+        // Skip semantic dedup for VIP auto-approve messages
+        if (suggestion.autoApprove != true && semanticDeduplicator != null) {
             val tenMinutesAgo = System.currentTimeMillis() - 600_000L
             val recentSuggestions = taskSuggestionDao.getAllRecentSuggestions(tenMinutesAgo)
             val deduplicationResult = semanticDeduplicator.checkDuplicate(

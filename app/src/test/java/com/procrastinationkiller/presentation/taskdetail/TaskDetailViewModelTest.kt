@@ -135,7 +135,7 @@ class TaskDetailViewModelTest {
     }
 
     @Test
-    fun `deleteTask sets task to null`() = runTest {
+    fun `deleteTask sets shouldNavigateBack to true`() = runTest {
         val task = TaskEntity(id = 1, title = "Task", priority = "MEDIUM", status = "PENDING")
         fakeRepository.setTasks(listOf(task))
 
@@ -146,7 +146,7 @@ class TaskDetailViewModelTest {
         viewModel.deleteTask()
         advanceUntilIdle()
 
-        assertNull(viewModel.uiState.value.task)
+        assertTrue(viewModel.uiState.value.shouldNavigateBack)
         assertEquals("Task archived", viewModel.uiState.value.message)
     }
 

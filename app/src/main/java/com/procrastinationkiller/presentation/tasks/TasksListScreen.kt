@@ -114,13 +114,18 @@ fun TasksListScreen(
                 val statusChips = listOf(
                     FilterChipData(
                         label = "Active",
-                        selected = !uiState.showCompleted,
+                        selected = !uiState.showCompleted && !uiState.showArchived,
                         onClick = { viewModel.toggleShowCompleted(false) }
                     ),
                     FilterChipData(
                         label = "Completed",
                         selected = uiState.showCompleted,
                         onClick = { viewModel.toggleShowCompleted(true) }
+                    ),
+                    FilterChipData(
+                        label = "Archived",
+                        selected = uiState.showArchived,
+                        onClick = { viewModel.toggleShowArchived(true) }
                     )
                 )
                 FilterChipsRow(chips = statusChips)
