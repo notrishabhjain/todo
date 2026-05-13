@@ -1,5 +1,8 @@
 package com.procrastinationkiller.presentation.settings
 
+import android.provider.ContactsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -60,15 +64,53 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     var showAddContactDialog by remember { mutableStateOf(false) }
+    var pendingContactName by remember { mutableStateOf("") }
+    var showAddContactDialogWithPicker by remember { mutableStateOf(false) }
 
-    if (showAddContactDialog) {
+    val contactPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickContact()
+    ) { uri ->
+        if (uri != null) {
+            val cursor = context.contentResolver.query(
+                uri,
+                arrayOf(ContactsContract.Contacts.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val nameIndex = it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                    if (nameIndex >= 0) {
+                        pendingContactName = it.getString(nameIndex) ?: ""
+                        showAddContactDialogWithPicker = true
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddContactDialog || showAddContactDialogWithPicker) {
         AddContactDialog(
-            onDismiss = { showAddContactDialog = false },
+            initialName = if (showAddContactDialogWithPicker) pendingContactName else "",
+            onDismiss = {
+                showAddContactDialog = false
+                showAddContactDialogWithPicker = false
+                pendingContactName = ""
+            },
             onConfirm = { name, priority ->
                 viewModel.addContact(name, priority)
                 showAddContactDialog = false
+                showAddContactDialogWithPicker = false
+                pendingContactName = ""
+            },
+            onPickFromContacts = {
+                showAddContactDialog = false
+                showAddContactDialogWithPicker = false
+                contactPickerLauncher.launch(null)
             }
         )
     }
@@ -529,10 +571,12 @@ private fun ContactItem(
 
 @Composable
 private fun AddContactDialog(
+    initialName: String = "",
     onDismiss: () -> Unit,
-    onConfirm: (String, ContactPriority) -> Unit
+    onConfirm: (String, ContactPriority) -> Unit,
+    onPickFromContacts: () -> Unit = {}
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(initialName) }
     var selectedPriority by remember { mutableStateOf(ContactPriority.VIP) }
 
     AlertDialog(
@@ -547,6 +591,12 @@ private fun AddContactDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+                OutlinedButton(
+                    onClick = onPickFromContacts,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Pick from Contacts")
+                }
                 Text(
                     text = "Priority",
                     style = MaterialTheme.typography.bodyMedium,
