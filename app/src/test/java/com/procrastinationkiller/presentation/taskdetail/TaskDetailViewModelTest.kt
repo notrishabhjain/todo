@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.procrastinationkiller.data.local.entity.TaskEntity
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.repository.TaskRepository
+import com.procrastinationkiller.domain.usecase.CalendarIntegrationHelper
 import com.procrastinationkiller.domain.usecase.UpdateTaskUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,6 +29,7 @@ class TaskDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRepository: FakeTaskRepository
     private lateinit var updateTaskUseCase: UpdateTaskUseCase
+    private lateinit var calendarIntegrationHelper: CalendarIntegrationHelper
     private lateinit var viewModel: TaskDetailViewModel
 
     @BeforeEach
@@ -35,6 +37,7 @@ class TaskDetailViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeTaskRepository()
         updateTaskUseCase = UpdateTaskUseCase(fakeRepository)
+        calendarIntegrationHelper = CalendarIntegrationHelper()
     }
 
     @AfterEach
@@ -48,7 +51,7 @@ class TaskDetailViewModelTest {
         fakeRepository.setTasks(listOf(task))
 
         val savedState = SavedStateHandle(mapOf("taskId" to 1L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isLoading)
@@ -59,7 +62,7 @@ class TaskDetailViewModelTest {
     @Test
     fun `non-existent task sets task to null`() = runTest {
         val savedState = SavedStateHandle(mapOf("taskId" to 999L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isLoading)
@@ -72,7 +75,7 @@ class TaskDetailViewModelTest {
         fakeRepository.setTasks(listOf(task))
 
         val savedState = SavedStateHandle(mapOf("taskId" to 1L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         viewModel.startEditing()
@@ -85,7 +88,7 @@ class TaskDetailViewModelTest {
         fakeRepository.setTasks(listOf(task))
 
         val savedState = SavedStateHandle(mapOf("taskId" to 1L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         viewModel.startEditing()
@@ -102,7 +105,7 @@ class TaskDetailViewModelTest {
         fakeRepository.setTasks(listOf(task))
 
         val savedState = SavedStateHandle(mapOf("taskId" to 1L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         viewModel.startEditing()
@@ -122,7 +125,7 @@ class TaskDetailViewModelTest {
         fakeRepository.setTasks(listOf(task))
 
         val savedState = SavedStateHandle(mapOf("taskId" to 1L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         viewModel.completeTask()
@@ -137,7 +140,7 @@ class TaskDetailViewModelTest {
         fakeRepository.setTasks(listOf(task))
 
         val savedState = SavedStateHandle(mapOf("taskId" to 1L))
-        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase)
+        viewModel = TaskDetailViewModel(savedState, fakeRepository, updateTaskUseCase, calendarIntegrationHelper)
         advanceUntilIdle()
 
         viewModel.deleteTask()
