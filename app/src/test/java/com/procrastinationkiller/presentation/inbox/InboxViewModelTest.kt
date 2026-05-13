@@ -174,6 +174,9 @@ class InboxViewModelTest {
 
         override suspend fun findByContentHash(hash: String): TaskSuggestionEntity? =
             suggestions.value.find { it.contentHash == hash }
+
+        override suspend fun getAllRecentSuggestions(since: Long): List<TaskSuggestionEntity> =
+            suggestions.value.filter { it.createdAt > since }
     }
 
     private class FakeTaskRepository : TaskRepository {

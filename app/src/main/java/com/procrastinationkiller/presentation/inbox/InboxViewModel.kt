@@ -35,9 +35,6 @@ class InboxViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(InboxUiState())
     val uiState: StateFlow<InboxUiState> = _uiState.asStateFlow()
 
-    // Track suggestion IDs that have already been auto-approved to prevent duplicates on Flow re-emission
-    private val autoApprovedIds = mutableSetOf<String>()
-
     init {
         loadSuggestions()
     }
@@ -64,20 +61,7 @@ class InboxViewModel @Inject constructor(
                     )
                 }
 
-                // Process auto-approve suggestions, skipping any already processed
-                val autoApproved = suggestions.filter { it.autoApprove }
-                val remaining = suggestions.filter { !it.autoApprove }
-
-                autoApproved.forEach { suggestion ->
-                    val suggestionKey = "${suggestion.suggestedTitle}|${suggestion.originalText}"
-                    if (suggestionKey !in autoApprovedIds) {
-                        autoApprovedIds.add(suggestionKey)
-                        approveTaskUseCase(suggestion)
-                        updateSuggestionStatus(suggestion, "APPROVED")
-                    }
-                }
-
-                _uiState.update { it.copy(suggestions = remaining, isLoading = false) }
+                _uiState.update { it.copy(suggestions = suggestions, isLoading = false) }
             }
         }
     }

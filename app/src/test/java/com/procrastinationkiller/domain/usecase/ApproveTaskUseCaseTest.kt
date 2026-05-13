@@ -7,7 +7,9 @@ import com.procrastinationkiller.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,6 +52,28 @@ class ApproveTaskUseCaseTest {
         // "please" and "send" pass length > 3 and are not stop words
         assertTrue(keywords.contains("please"))
         assertTrue(keywords.contains("send") || keywords.contains("report"))
+    }
+
+    @Test
+    fun `approve propagates sourceApp sender originalText to task entity`() = runBlocking {
+        val suggestion = TaskSuggestion(
+            suggestedTitle = "Send quarterly report",
+            description = "Q4 report needed",
+            priority = TaskPriority.HIGH,
+            dueDate = null,
+            sourceApp = "com.whatsapp",
+            sender = "Boss",
+            originalText = "Please send the quarterly report ASAP",
+            confidence = 0.9f
+        )
+
+        approveUseCase(suggestion)
+
+        val insertedTask = fakeRepository.getLastInsertedTask()
+        assertNotNull(insertedTask)
+        assertEquals("com.whatsapp", insertedTask?.sourceApp)
+        assertEquals("Boss", insertedTask?.sender)
+        assertEquals("Please send the quarterly report ASAP", insertedTask?.originalText)
     }
 
     @Test
@@ -106,6 +130,8 @@ class ApproveTaskUseCaseTest {
         private val tasks = mutableListOf<TaskEntity>()
         private val tasksFlow = MutableStateFlow<List<TaskEntity>>(emptyList())
         private var nextId = 1L
+
+        fun getLastInsertedTask(): TaskEntity? = tasks.lastOrNull()
 
         override fun getAllTasks(): Flow<List<TaskEntity>> = tasksFlow
         override fun getTasksByStatus(status: String): Flow<List<TaskEntity>> = tasksFlow

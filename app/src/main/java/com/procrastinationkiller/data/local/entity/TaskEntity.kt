@@ -14,5 +14,10 @@ data class TaskEntity(
     val reminderMode: String = "NORMAL",
     val deadline: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val sourceApp: String? = null,
+    val sender: String? = null,
+    val originalText: String? = null,
+    val tags: String? = null,
+    val notes: String? = null
 )

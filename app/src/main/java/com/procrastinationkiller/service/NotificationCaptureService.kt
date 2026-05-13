@@ -2,6 +2,7 @@ package com.procrastinationkiller.service
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.procrastinationkiller.data.repository.UserPreferencesRepository
 import com.procrastinationkiller.domain.usecase.TaskExtractionUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +18,27 @@ class NotificationCaptureService : NotificationListenerService() {
     @Inject
     lateinit var taskExtractionUseCase: TaskExtractionUseCase
 
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var monitoredApps: Set<String> = setOf(
+        "com.whatsapp",
+        "org.telegram.messenger",
+        "com.slack",
+        "com.google.android.gm"
+    )
+
+    override fun onCreate() {
+        super.onCreate()
+        serviceScope.launch {
+            userPreferencesRepository.monitoredApps.collect { apps ->
+                monitoredApps = apps
+            }
+        }
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
@@ -27,8 +48,13 @@ class NotificationCaptureService : NotificationListenerService() {
             return
         }
 
+        // Skip notifications from apps not in the monitored set
+        if (sbn.packageName !in monitoredApps) {
+            return
+        }
+
         serviceScope.launch {
-            taskExtractionUseCase.processNotification(sbn)
+            taskExtractionUseCase.processNotification(sbn, sbnKey = sbn.key)
         }
     }
 

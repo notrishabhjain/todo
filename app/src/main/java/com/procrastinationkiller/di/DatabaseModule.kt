@@ -42,6 +42,19 @@ object DatabaseModule {
         }
     }
 
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Add new columns to tasks table
+            db.execSQL("ALTER TABLE tasks ADD COLUMN sourceApp TEXT")
+            db.execSQL("ALTER TABLE tasks ADD COLUMN sender TEXT")
+            db.execSQL("ALTER TABLE tasks ADD COLUMN originalText TEXT")
+            db.execSQL("ALTER TABLE tasks ADD COLUMN tags TEXT")
+            db.execSQL("ALTER TABLE tasks ADD COLUMN notes TEXT")
+            // Add sbnKey column to notifications table
+            db.execSQL("ALTER TABLE notifications ADD COLUMN sbnKey TEXT")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
@@ -50,7 +63,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "procrastination_killer_db"
         )
-            .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+            .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
             .fallbackToDestructiveMigration()
             .build()
     }

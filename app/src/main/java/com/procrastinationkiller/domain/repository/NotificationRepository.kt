@@ -10,4 +10,5 @@ interface NotificationRepository {
     suspend fun insertNotification(notification: NotificationEntity): Long
     suspend fun updateNotification(notification: NotificationEntity)
     suspend fun countProcessedByKey(key: String): Int
+    suspend fun countBySbnKeyInLastHour(key: String, since: Long): Int
 }

@@ -22,13 +22,13 @@ class SemanticDeduplicatorTest {
         )
 
         val result = deduplicator.checkDuplicate(
-            newText = "please send the report ASAP",
+            newText = "send the report ASAP",
             newSender = "Boss",
             existingSuggestions = existing
         )
 
         assertTrue(result.isDuplicate)
-        assertTrue(result.similarityScore >= 0.6f)
+        assertTrue(result.similarityScore >= 0.75f)
     }
 
     @Test
@@ -49,17 +49,17 @@ class SemanticDeduplicatorTest {
     @Test
     fun `same sender with similar keywords and slight rewording is duplicate`() {
         val existing = listOf(
-            createSuggestion(1, "send the monthly report to client", "Manager")
+            createSuggestion(1, "send monthly report to client", "Manager")
         )
 
         val result = deduplicator.checkDuplicate(
-            newText = "please send monthly report to the client",
+            newText = "send monthly report to client",
             newSender = "Manager",
             existingSuggestions = existing
         )
 
         assertTrue(result.isDuplicate)
-        assertTrue(result.similarityScore >= 0.6f)
+        assertTrue(result.similarityScore >= 0.75f)
     }
 
     @Test

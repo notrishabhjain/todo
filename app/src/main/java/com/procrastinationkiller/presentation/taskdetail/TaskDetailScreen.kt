@@ -196,6 +196,45 @@ private fun ViewMode(
         }
     }
 
+    // Source Info section - shown when sourceApp is available
+    if (!task.sourceApp.isNullOrEmpty()) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Source Info",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "App: ${friendlyAppName(task.sourceApp)}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                if (!task.sender.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "From: ${task.sender}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                if (!task.originalText.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Original: ${task.originalText}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    }
+
     Spacer(modifier = Modifier.height(24.dp))
 
     Row(
@@ -296,4 +335,17 @@ private fun EditMode(
 private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+private fun friendlyAppName(packageName: String?): String {
+    if (packageName == null) return "Unknown"
+    return when {
+        packageName.contains("whatsapp") -> "WhatsApp"
+        packageName.contains("telegram") -> "Telegram"
+        packageName.contains("slack") -> "Slack"
+        packageName.contains("gmail") || packageName.contains("gm") -> "Gmail"
+        packageName.contains("dialer") || packageName.contains("phone") -> "Phone"
+        else -> packageName.substringAfterLast(".")
+            .replaceFirstChar { it.uppercase() }
+    }
 }

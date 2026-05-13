@@ -27,4 +27,7 @@ interface NotificationDao {
 
     @Query("SELECT COUNT(*) FROM notifications WHERE notificationKey = :key AND isProcessed = 1")
     suspend fun countProcessedByKey(key: String): Int
+
+    @Query("SELECT COUNT(*) FROM notifications WHERE sbnKey = :key AND timestamp > :since")
+    suspend fun countBySbnKeyInLastHour(key: String, since: Long): Int
 }
