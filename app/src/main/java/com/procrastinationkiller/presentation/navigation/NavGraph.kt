@@ -53,7 +53,10 @@ fun NavGraph(
                     navController.navigate(Routes.taskDetail(taskId))
                 },
                 isNotificationListenerEnabled = isNotificationListenerEnabled,
-                onOpenNotificationSettings = onOpenNotificationSettings
+                onOpenNotificationSettings = onOpenNotificationSettings,
+                onNavigateToTranscript = {
+                    navController.navigate(Routes.MEETING_TRANSCRIPT)
+                }
             )
         }
         composable(Routes.INBOX) {
@@ -78,6 +81,18 @@ fun NavGraph(
             SettingsScreen(
                 onNavigateToKeywords = {
                     navController.navigate(Routes.KEYWORD_MANAGEMENT)
+                },
+                onNavigateToAnalytics = {
+                    navController.navigate(Routes.ANALYTICS)
+                },
+                onNavigateToInsights = {
+                    navController.navigate(Routes.INSIGHTS)
+                },
+                onNavigateToExportImport = {
+                    navController.navigate(Routes.EXPORT_IMPORT)
+                },
+                onNavigateToTranscript = {
+                    navController.navigate(Routes.MEETING_TRANSCRIPT)
                 }
             )
         }
