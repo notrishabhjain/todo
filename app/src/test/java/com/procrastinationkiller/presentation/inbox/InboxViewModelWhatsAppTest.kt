@@ -142,7 +142,7 @@ class InboxViewModelWhatsAppTest {
     }
 
     @Test
-    fun `auto-approve suggestions from DB appear in suggestions list`() = runTest {
+    fun `auto-approve suggestions from DB are filtered out of suggestions list`() = runTest {
         // Insert a suggestion with autoApprove=true directly into the DAO
         fakeSuggestionDao.insert(
             TaskSuggestionEntity(
@@ -161,10 +161,9 @@ class InboxViewModelWhatsAppTest {
         viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao, fakeContactRepository)
         advanceUntilIdle()
 
-        // Auto-approve is now handled in TaskExtractionUseCase, not in the ViewModel.
-        // PENDING suggestions with autoApprove=true still show in the inbox if they reach here.
-        assertEquals(1, viewModel.uiState.value.suggestions.size)
-        assertEquals("Auto Task", viewModel.uiState.value.suggestions[0].suggestedTitle)
+        // Auto-approve suggestions should be filtered out of inbox to prevent race condition
+        // where they briefly appear before being auto-approved by TaskExtractionUseCase.
+        assertEquals(0, viewModel.uiState.value.suggestions.size)
     }
 
     private fun createWhatsAppSuggestion(
@@ -268,6 +267,15 @@ class InboxViewModelWhatsAppTest {
 
         override suspend fun getContactByName(name: String): ContactEntity? =
             contacts.value.find { it.name == name }
+
+        override suspend fun getContactByNameIgnoreCase(name: String): ContactEntity? =
+            contacts.value.find { it.name.equals(name, ignoreCase = true) }
+
+        override suspend fun getContactByNameFuzzy(name: String): ContactEntity? =
+            contacts.value.find {
+                it.name.lowercase().contains(name.lowercase()) ||
+                    name.lowercase().contains(it.name.lowercase())
+            }
 
         override fun getContactsByPriority(priority: String): Flow<List<ContactEntity>> =
             contacts.map { list -> list.filter { it.priority == priority } }

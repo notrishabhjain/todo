@@ -153,6 +153,38 @@ class WhatsAppIntelligenceEngineTest {
         assertNull(processResult.whatsAppContext.groupName)
     }
 
+    @Test
+    fun `VIP contact matched case-insensitively triggers autoApprove`() = runBlocking {
+        fakeRepository.addContact(
+            ContactEntity(id = 1, name = "Boss", priority = "VIP")
+        )
+
+        // Sender name has different case than stored contact
+        val result = engine.evaluate("boss", "Review this document ASAP", false)
+
+        assertTrue(result is WhatsAppEvaluationResult.ProcessResult)
+        val processResult = result as WhatsAppEvaluationResult.ProcessResult
+        assertTrue(processResult.autoApprove)
+        assertEquals(TaskPriority.HIGH, processResult.priorityOverride)
+        assertEquals(ContactPriority.VIP, processResult.contactPriority)
+    }
+
+    @Test
+    fun `VIP contact matched via fuzzy matching triggers autoApprove`() = runBlocking {
+        fakeRepository.addContact(
+            ContactEntity(id = 1, name = "John Smith", priority = "VIP")
+        )
+
+        // WhatsApp sometimes sends partial names or names with extras
+        val result = engine.evaluate("John Smith (Work)", "Need this done today", false)
+
+        assertTrue(result is WhatsAppEvaluationResult.ProcessResult)
+        val processResult = result as WhatsAppEvaluationResult.ProcessResult
+        assertTrue(processResult.autoApprove)
+        assertEquals(TaskPriority.HIGH, processResult.priorityOverride)
+        assertEquals(ContactPriority.VIP, processResult.contactPriority)
+    }
+
     private class FakeContactRepository : ContactRepository {
         private val contacts = MutableStateFlow<List<ContactEntity>>(emptyList())
         val incrementedIds = mutableListOf<Long>()
@@ -172,6 +204,15 @@ class WhatsAppIntelligenceEngineTest {
 
         override suspend fun getContactByName(name: String): ContactEntity? =
             contacts.value.find { it.name == name }
+
+        override suspend fun getContactByNameIgnoreCase(name: String): ContactEntity? =
+            contacts.value.find { it.name.equals(name, ignoreCase = true) }
+
+        override suspend fun getContactByNameFuzzy(name: String): ContactEntity? =
+            contacts.value.find {
+                it.name.lowercase().contains(name.lowercase()) ||
+                    name.lowercase().contains(it.name.lowercase())
+            }
 
         override fun getContactsByPriority(priority: String): Flow<List<ContactEntity>> =
             contacts.map { list -> list.filter { it.priority == priority } }

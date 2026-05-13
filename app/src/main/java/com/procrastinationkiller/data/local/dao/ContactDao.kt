@@ -23,6 +23,12 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE name = :name LIMIT 1")
     suspend fun getContactByName(name: String): ContactEntity?
 
+    @Query("SELECT * FROM contacts WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+    suspend fun getContactByNameIgnoreCase(name: String): ContactEntity?
+
+    @Query("SELECT * FROM contacts WHERE LOWER(name) LIKE '%' || LOWER(:name) || '%' OR LOWER(:name) LIKE '%' || LOWER(name) || '%' LIMIT 1")
+    suspend fun getContactByNameFuzzy(name: String): ContactEntity?
+
     @Query("SELECT * FROM contacts WHERE priority = :priority ORDER BY name ASC")
     fun getContactsByPriority(priority: String): Flow<List<ContactEntity>>
 

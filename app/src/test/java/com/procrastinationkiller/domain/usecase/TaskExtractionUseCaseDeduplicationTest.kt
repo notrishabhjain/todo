@@ -236,6 +236,13 @@ class TaskExtractionUseCaseDeduplicationTest {
         override suspend fun getContactById(id: Long): ContactEntity? = contacts.find { it.id == id }
         override suspend fun getContactByName(name: String): ContactEntity? =
             contacts.find { it.name == name }
+        override suspend fun getContactByNameIgnoreCase(name: String): ContactEntity? =
+            contacts.find { it.name.equals(name, ignoreCase = true) }
+        override suspend fun getContactByNameFuzzy(name: String): ContactEntity? =
+            contacts.find {
+                it.name.lowercase().contains(name.lowercase()) ||
+                    name.lowercase().contains(it.name.lowercase())
+            }
         override fun getContactsByPriority(priority: String): Flow<List<ContactEntity>> =
             MutableStateFlow(contacts.filter { it.priority == priority })
         override suspend fun updatePriority(id: Long, priority: String) {

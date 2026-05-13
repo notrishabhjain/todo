@@ -15,6 +15,38 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class NotificationCaptureService : NotificationListenerService() {
 
+    companion object {
+        val whatsAppSystemMessages = setOf(
+            "checking for new messages",
+            "whatsapp web is currently active",
+            "waiting for this message",
+            "this message was deleted",
+            "messages you send to this group are now secured",
+            "end-to-end encrypted",
+            "ringing",
+            "ongoing voice call",
+            "ongoing video call",
+            "missed voice call",
+            "missed video call",
+            "you might have new messages",
+            "message timer updated"
+        )
+
+        private val whatsAppPackages = setOf("com.whatsapp", "com.whatsapp.w4b")
+
+        fun isWhatsAppSystemNotification(packageName: String, title: String?, text: String?): Boolean {
+            if (packageName !in whatsAppPackages) return false
+
+            val lowerTitle = title?.lowercase() ?: ""
+            val lowerText = text?.lowercase() ?: ""
+
+            return whatsAppSystemMessages.any { systemMsg ->
+                lowerTitle.contains(systemMsg) || lowerText.contains(systemMsg) ||
+                    lowerTitle == systemMsg || lowerText == systemMsg
+            }
+        }
+    }
+
     @Inject
     lateinit var taskExtractionUseCase: TaskExtractionUseCase
 
@@ -57,6 +89,11 @@ class NotificationCaptureService : NotificationListenerService() {
             return
         }
 
+        // Filter WhatsApp system notifications
+        if (isWhatsAppSystemNotification(sbn)) {
+            return
+        }
+
         serviceScope.launch {
             taskExtractionUseCase.processNotification(sbn, sbnKey = sbn.key)
         }
@@ -90,5 +127,12 @@ class NotificationCaptureService : NotificationListenerService() {
             "com.android.providers"
         )
         return systemPackages.any { sbn.packageName.startsWith(it) }
+    }
+
+    private fun isWhatsAppSystemNotification(sbn: StatusBarNotification): Boolean {
+        val extras = sbn.notification.extras
+        val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString()
+        val text = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString()
+        return Companion.isWhatsAppSystemNotification(sbn.packageName, title, text)
     }
 }

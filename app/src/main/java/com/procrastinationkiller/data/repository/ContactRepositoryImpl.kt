@@ -15,6 +15,8 @@ class ContactRepositoryImpl @Inject constructor(
     override fun getEscalationContacts(): Flow<List<ContactEntity>> = contactDao.getEscalationContacts()
     override suspend fun getContactById(id: Long): ContactEntity? = contactDao.getContactById(id)
     override suspend fun getContactByName(name: String): ContactEntity? = contactDao.getContactByName(name)
+    override suspend fun getContactByNameIgnoreCase(name: String): ContactEntity? = contactDao.getContactByNameIgnoreCase(name)
+    override suspend fun getContactByNameFuzzy(name: String): ContactEntity? = contactDao.getContactByNameFuzzy(name)
     override fun getContactsByPriority(priority: String): Flow<List<ContactEntity>> = contactDao.getContactsByPriority(priority)
     override suspend fun updatePriority(id: Long, priority: String) = contactDao.updatePriority(id, priority)
     override suspend fun updateAutoApprove(id: Long, autoApprove: Boolean) = contactDao.updateAutoApprove(id, autoApprove)

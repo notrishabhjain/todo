@@ -30,6 +30,8 @@ class WhatsAppIntelligenceEngine @Inject constructor(
         timestamp: Long = System.currentTimeMillis()
     ): WhatsAppEvaluationResult {
         val contact = contactRepository.getContactByName(sender)
+            ?: contactRepository.getContactByNameIgnoreCase(sender)
+            ?: contactRepository.getContactByNameFuzzy(sender)
         val contactPriority = contact?.let { parseContactPriority(it.priority) } ?: ContactPriority.NORMAL
 
         // Update contact interaction tracking

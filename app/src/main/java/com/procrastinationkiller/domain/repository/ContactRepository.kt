@@ -8,6 +8,8 @@ interface ContactRepository {
     fun getEscalationContacts(): Flow<List<ContactEntity>>
     suspend fun getContactById(id: Long): ContactEntity?
     suspend fun getContactByName(name: String): ContactEntity?
+    suspend fun getContactByNameIgnoreCase(name: String): ContactEntity?
+    suspend fun getContactByNameFuzzy(name: String): ContactEntity?
     fun getContactsByPriority(priority: String): Flow<List<ContactEntity>>
     suspend fun updatePriority(id: Long, priority: String)
     suspend fun updateAutoApprove(id: Long, autoApprove: Boolean)
