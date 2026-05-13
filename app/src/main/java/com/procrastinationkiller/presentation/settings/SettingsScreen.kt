@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -31,7 +32,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,6 +56,7 @@ fun SettingsScreen(
     onNavigateToInsights: () -> Unit = {},
     onNavigateToExportImport: () -> Unit = {},
     onNavigateToTranscript: () -> Unit = {},
+    onNavigateToMonitoredApps: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -106,16 +107,41 @@ fun SettingsScreen(
             )
         }
 
-        // Notification Settings Section
+        // Monitored Apps Section
         item {
             SectionHeader("Monitored Apps")
         }
 
         item {
-            MonitoredAppsSection(
-                monitoredApps = uiState.monitoredApps,
-                onToggleApp = { app, enabled -> viewModel.toggleApp(app, enabled) }
-            )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToMonitoredApps() },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Manage Monitored Apps (${uiState.monitoredApps.size} selected)",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Choose which apps to monitor for tasks",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.PhoneAndroid, contentDescription = "Monitored Apps")
+                }
+            }
         }
 
         // VIP Contacts Section
@@ -310,6 +336,15 @@ fun SettingsScreen(
             }
         }
 
+        // Background Protection Section
+        item {
+            SectionHeader("Background Protection")
+        }
+
+        item {
+            OemAutoStartGuideCard()
+        }
+
         // About Section
         item {
             SectionHeader("About")
@@ -448,45 +483,6 @@ private fun ReminderFrequencySelector(
                             onFrequencySelected(frequency)
                             expanded = false
                         }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MonitoredAppsSection(
-    monitoredApps: Set<String>,
-    onToggleApp: (String, Boolean) -> Unit
-) {
-    val availableApps = listOf(
-        "com.whatsapp" to "WhatsApp",
-        "org.telegram.messenger" to "Telegram",
-        "com.slack" to "Slack",
-        "com.google.android.gm" to "Gmail",
-        "com.android.mms" to "Messages"
-    )
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            availableApps.forEach { (packageName, displayName) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = displayName, style = MaterialTheme.typography.bodyMedium)
-                    Switch(
-                        checked = monitoredApps.contains(packageName),
-                        onCheckedChange = { enabled -> onToggleApp(packageName, enabled) }
                     )
                 }
             }

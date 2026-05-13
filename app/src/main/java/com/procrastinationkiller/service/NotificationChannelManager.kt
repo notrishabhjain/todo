@@ -34,10 +34,10 @@ class NotificationChannelManager @Inject constructor(
         val suggestionChannel = NotificationChannel(
             CHANNEL_SUGGESTIONS,
             "Task Suggestions",
-            NotificationManager.IMPORTANCE_DEFAULT
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "Suggested tasks from notifications"
-            enableVibration(false)
+            enableVibration(true)
             setShowBadge(true)
         }
 

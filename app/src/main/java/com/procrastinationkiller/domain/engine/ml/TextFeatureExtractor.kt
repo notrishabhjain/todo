@@ -14,19 +14,63 @@ class TextFeatureExtractor @Inject constructor() {
             "check", "update", "schedule", "prepare", "fix", "deploy", "test",
             "follow", "remind", "finish", "deliver", "write", "create",
             "forward", "approve", "confirm", "book", "pay", "buy", "order",
-            "karna", "bhejna", "dekho", "bhejo", "likho", "batana", "karo"
+            "assign", "build", "cancel", "change", "close", "connect",
+            "coordinate", "debug", "delegate", "delete", "design", "develop",
+            "discuss", "document", "download", "draft", "edit", "email",
+            "escalate", "evaluate", "execute", "export", "file", "finalize",
+            "find", "generate", "handle", "help", "implement", "import",
+            "improve", "inform", "install", "integrate", "investigate",
+            "invite", "launch", "lead", "list", "log", "maintain", "make",
+            "manage", "merge", "migrate", "modify", "monitor", "move",
+            "negotiate", "notify", "open", "operate", "optimize", "organize",
+            "plan", "post", "print", "prioritize", "process", "produce",
+            "provide", "publish", "push", "record", "release", "remove",
+            "report", "request", "research", "resolve", "respond", "restore",
+            "run", "save", "scan", "secure", "select", "setup", "share",
+            "ship", "sign", "solve", "start", "stop", "store", "submit",
+            "summarize", "support", "sync", "track", "train", "transfer",
+            "translate", "troubleshoot", "unblock", "update", "upgrade",
+            "upload", "validate", "verify", "work", "wrap",
+            // Hindi/Hinglish
+            "karna", "bhejna", "dekho", "bhejo", "likho", "batana", "karo",
+            "karein", "karenge", "banao", "dekhna", "likhna", "hatao",
+            "rakho", "dhundo", "padho", "chalo", "roko", "sambhalo",
+            "bata dena", "kar do", "bhej do", "de do", "kar dena",
+            "check karna", "review karna", "update karna", "fix karna",
+            "call karna", "email karna", "share karna", "deploy karna",
+            "test karna", "setup karna", "submit karna", "complete karna",
+            "करना", "भेजना", "देखना", "लिखना", "बताना", "बनाना",
+            "करो", "भेजो", "देखो", "लिखो", "बताओ", "बनाओ",
+            "कर दो", "भेज दो", "कीजिए", "करें"
         )
 
         private val URGENCY_KEYWORDS = setOf(
             "urgent", "asap", "immediately", "high priority", "critical",
-            "important", "deadline", "jaldi", "turant", "abhi", "zaruri", "fatafat"
+            "important", "deadline", "overdue", "time sensitive", "rush",
+            "emergency", "must", "required", "now", "right away",
+            "top priority", "first thing", "before eod", "blocking",
+            "blocker", "showstopper", "p0", "p1", "cannot wait",
+            "past due", "behind schedule", "without delay", "hurry",
+            "promptly", "expedite",
+            // Hindi/Hinglish
+            "jaldi", "turant", "abhi", "zaruri", "fatafat", "fauran",
+            "bahut zaruri", "urgent hai", "jaldi karo", "abhi ke abhi",
+            "sabse pehle", "jald se jald",
+            "अभी", "तुरंत", "जल्दी", "फौरन", "बहुत जरूरी",
+            "सबसे पहले", "फटाफट", "तत्काल", "शीघ्र"
         )
 
         private val TIME_REFERENCES = setOf(
             "tomorrow", "tonight", "today", "monday", "tuesday", "wednesday",
             "thursday", "friday", "saturday", "sunday", "next week", "eod",
-            "end of day", "by evening", "by morning",
-            "kal", "shaam", "subah", "aaj", "parso", "hafte"
+            "end of day", "by evening", "by morning", "this afternoon",
+            "before lunch", "after lunch", "end of week",
+            // Hindi/Hinglish
+            "kal", "kal tak", "shaam tak", "subah", "agle hafte", "aaj",
+            "raat tak", "parso", "do din mein", "is hafte", "dopahar tak",
+            "shaam ko",
+            "कल", "आज", "शाम तक", "सुबह", "परसों", "अगले हफ्ते",
+            "रात तक", "दोपहर तक"
         )
     }
 

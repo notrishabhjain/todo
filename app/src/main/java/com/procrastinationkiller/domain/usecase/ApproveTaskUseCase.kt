@@ -22,7 +22,10 @@ class ApproveTaskUseCase @Inject constructor(
             priority = suggestion.priority.name,
             status = "PENDING",
             deadline = suggestion.dueDate,
-            createdAt = System.currentTimeMillis()
+            createdAt = System.currentTimeMillis(),
+            sourceApp = suggestion.sourceApp,
+            sender = suggestion.sender,
+            originalText = suggestion.originalText
         )
         val taskId = taskRepository.insertTask(taskEntity)
 

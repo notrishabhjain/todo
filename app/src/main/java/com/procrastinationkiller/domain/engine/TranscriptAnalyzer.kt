@@ -2,6 +2,7 @@ package com.procrastinationkiller.domain.engine
 
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.engine.transcript.EnhancedTranscriptAnalyzer
+import com.procrastinationkiller.domain.engine.transcript.TranscriptPatterns
 import com.procrastinationkiller.domain.model.TaskPriority
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -133,7 +134,7 @@ class TranscriptAnalyzer @Inject constructor(
     )
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^(?:\\[?[\\d:.-]+\\]?[\\s-]*)?([A-Za-z][A-Za-z\\s]*)(?:\\s*\\[?[\\d:.-]*\\]?)?:\\s*")
+        private val SPEAKER_PATTERN = TranscriptPatterns.SPEAKER_PATTERN
         private val TIMESTAMP_PATTERN = Regex("^\\s*(?:\\[?\\d{1,2}[:.]\\d{2}(?:[:.]\\d{2})?\\]?[\\s-]*)(?:\\s*-\\s*)?")
         private val FILLER_WORDS_PATTERN = Regex(",?\\s*\\b(?:um|uh|you know)\\b,?\\s*", RegexOption.IGNORE_CASE)
         // "like" is only stripped when surrounded by commas (filler usage: ", like,")
@@ -142,7 +143,7 @@ class TranscriptAnalyzer @Inject constructor(
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")
-        private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please)\\s+")
+        private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please|ko bol do|se karwao|ko bolo|se kaho|ko assign karo)\\s+")
 
         fun stripTimestamps(line: String): String {
             // Strip leading timestamps in formats: [HH:MM:SS], [HH:MM], HH:MM:SS -, HH:MM -, (HH:MM:SS), (HH:MM)

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.procrastinationkiller.presentation.settings.OemAutoStartGuideCard
 import kotlinx.coroutines.launch
 
 data class OnboardingPage(
@@ -48,6 +50,7 @@ fun OnboardingScreen(
     onRequestNotificationAccess: () -> Unit = {},
     onSelectApps: () -> Unit = {},
     onChooseAggressiveness: () -> Unit = {},
+    onRequestBatteryOptimization: () -> Unit = {},
     onComplete: () -> Unit = {}
 ) {
     val pages = listOf(
@@ -68,6 +71,12 @@ fun OnboardingScreen(
             description = "How aggressive should we be about reminding you? From gentle nudges to relentless accountability - pick what works for you.",
             icon = Icons.Default.Speed,
             actionLabel = "Choose Mode"
+        ),
+        OnboardingPage(
+            title = "Battery Optimization",
+            description = "To ensure reliable reminders, please disable battery optimization for this app. This prevents the system from killing our background service.",
+            icon = Icons.Default.BatteryAlert,
+            actionLabel = "Disable Optimization"
         ),
         OnboardingPage(
             title = "All Set!",
@@ -102,7 +111,10 @@ fun OnboardingScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { pageIndex ->
-            OnboardingPageContent(page = pages[pageIndex])
+            OnboardingPageContent(
+                page = pages[pageIndex],
+                showOemGuide = pageIndex == 3 // Battery Optimization page
+            )
         }
 
         // Page indicators
@@ -155,7 +167,8 @@ fun OnboardingScreen(
                         0 -> onRequestNotificationAccess()
                         1 -> onSelectApps()
                         2 -> onChooseAggressiveness()
-                        3 -> onComplete()
+                        3 -> onRequestBatteryOptimization()
+                        4 -> onComplete()
                     }
                     if (pagerState.currentPage < pages.size - 1) {
                         coroutineScope.launch {
@@ -171,7 +184,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingPageContent(page: OnboardingPage) {
+private fun OnboardingPageContent(page: OnboardingPage, showOemGuide: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -211,5 +224,10 @@ private fun OnboardingPageContent(page: OnboardingPage) {
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (showOemGuide) {
+            Spacer(modifier = Modifier.height(16.dp))
+            OemAutoStartGuideCard()
+        }
     }
 }

@@ -21,10 +21,22 @@ class EnhancedTranscriptAnalyzer(
         val context = contextBuilder.build(transcript)
 
         val segments = splitIntoSegments(transcript)
+        val sectionTopics = detectSectionTopics(transcript)
         val rawItems = mutableListOf<TranscriptActionItem>()
+        var currentSectionTopic: String? = null
 
         for (segment in segments) {
+            // Update section topic if the segment text matches a detected section header
+            val sectionMatch = sectionTopics.find { it.second == segment.text }
+            if (sectionMatch != null) {
+                currentSectionTopic = sectionMatch.first
+                continue
+            }
+
             val keywordAnalysis = keywordEngine.analyze(segment.text)
+
+            // If the segment contains Devanagari, also check Devanagari keywords
+            val isDevanagariText = containsDevanagari(segment.text)
 
             val isActionable: Boolean
             val mlConfidence: Float?
@@ -34,7 +46,8 @@ class EnhancedTranscriptAnalyzer(
                 isActionable = hybridResult.isActionable
                 mlConfidence = hybridResult.confidence
             } else {
-                isActionable = keywordAnalysis.isActionable
+                // For Devanagari text, the keyword engine already checks Devanagari keywords
+                isActionable = keywordAnalysis.isActionable || (isDevanagariText && keywordAnalysis.actionKeywords.isNotEmpty())
                 mlConfidence = null
             }
 
@@ -43,6 +56,7 @@ class EnhancedTranscriptAnalyzer(
                 val speakerRole = findSpeakerRole(segment.speaker, owner, speakerProfiles)
                 val priority = determinePriority(keywordAnalysis, context, speakerRole)
                 val confidence = calculateConfidence(keywordAnalysis, speakerRole, mlConfidence)
+                val topic = currentSectionTopic ?: context.currentTopic
 
                 rawItems.add(
                     TranscriptActionItem(
@@ -53,7 +67,7 @@ class EnhancedTranscriptAnalyzer(
                         confidence = confidence,
                         speakerRole = speakerRole?.name,
                         meetingType = context.meetingType.name,
-                        contextTopic = context.currentTopic,
+                        contextTopic = topic,
                         mlConfidence = mlConfidence
                     )
                 )
@@ -61,6 +75,44 @@ class EnhancedTranscriptAnalyzer(
         }
 
         return deduplicateItems(rawItems)
+    }
+
+    /**
+     * Detects if text contains Devanagari characters (Unicode range U+0900 to U+097F).
+     */
+    fun containsDevanagari(text: String): Boolean {
+        return text.any { it.code in 0x0900..0x097F }
+    }
+
+    /**
+     * Detects section headers in the transcript.
+     * A section header is a line that is all caps, or a short line (< 6 words) ending with ':'.
+     */
+    private fun detectSectionTopics(transcript: String): List<Pair<String, String>> {
+        val sections = mutableListOf<Pair<String, String>>()
+        val lines = transcript.split("\n").filter { it.isNotBlank() }
+
+        for (rawLine in lines) {
+            val line = rawLine.trim()
+            val words = line.split("\\s+".toRegex())
+
+            // All caps line (at least 2 chars, and all letters are uppercase)
+            val letters = line.filter { it.isLetter() }
+            if (letters.length >= 2 && letters.all { it.isUpperCase() }) {
+                sections.add(Pair(line.lowercase().removeSuffix(":").trim(), line))
+                continue
+            }
+
+            // Short line ending with ':' (< 6 words, not matching speaker pattern)
+            if (line.endsWith(":") && words.size < 6) {
+                val speakerMatch = SPEAKER_PATTERN.find(line)
+                if (speakerMatch == null) {
+                    sections.add(Pair(line.removeSuffix(":").trim().lowercase(), line))
+                }
+            }
+        }
+
+        return sections
     }
 
     private fun splitIntoSegments(transcript: String): List<TranscriptSegment> {
@@ -222,10 +274,10 @@ class EnhancedTranscriptAnalyzer(
     )
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^(?:\\[?[\\d:.-]+\\]?[\\s-]*)?([A-Za-z][A-Za-z\\s]*)(?:\\s*\\[?[\\d:.-]*\\]?)?:\\s*")
+        private val SPEAKER_PATTERN = TranscriptPatterns.SPEAKER_PATTERN
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")
-        private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please)\\s+")
+        private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please|ko bol do|se karwao|ko bolo|se kaho|ko assign karo)\\s+")
     }
 }

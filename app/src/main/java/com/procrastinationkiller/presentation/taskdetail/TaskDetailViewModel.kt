@@ -124,8 +124,15 @@ class TaskDetailViewModel @Inject constructor(
 
     fun deleteTask() {
         viewModelScope.launch {
-            updateTaskUseCase.deleteTask(taskId)
+            updateTaskUseCase.updateStatus(taskId, TaskStatus.DELETED)
             _uiState.update { it.copy(message = "Task deleted", task = null) }
+        }
+    }
+
+    fun archiveTask() {
+        viewModelScope.launch {
+            updateTaskUseCase.updateStatus(taskId, TaskStatus.ARCHIVED)
+            _uiState.update { it.copy(message = "Task archived", task = null) }
         }
     }
 

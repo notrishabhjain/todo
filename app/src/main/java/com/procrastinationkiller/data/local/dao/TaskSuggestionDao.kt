@@ -26,4 +26,7 @@ interface TaskSuggestionDao {
 
     @Query("SELECT * FROM task_suggestions WHERE contentHash = :hash LIMIT 1")
     suspend fun findByContentHash(hash: String): TaskSuggestionEntity?
+
+    @Query("SELECT * FROM task_suggestions WHERE createdAt > :since ORDER BY createdAt DESC")
+    suspend fun getAllRecentSuggestions(since: Long): List<TaskSuggestionEntity>
 }

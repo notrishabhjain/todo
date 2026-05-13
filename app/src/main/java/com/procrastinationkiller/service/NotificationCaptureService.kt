@@ -2,6 +2,7 @@ package com.procrastinationkiller.service
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.procrastinationkiller.data.repository.UserPreferencesRepository
 import com.procrastinationkiller.domain.usecase.TaskExtractionUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +18,29 @@ class NotificationCaptureService : NotificationListenerService() {
     @Inject
     lateinit var taskExtractionUseCase: TaskExtractionUseCase
 
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var monitoredApps: Set<String> = emptySet()
+
+    // Tracks whether the monitoredApps set has been loaded from preferences at least once.
+    // While not yet loaded (empty set), all notifications are allowed through to avoid
+    // dropping notifications during the startup race window.
+    @Volatile
+    private var monitoredAppsLoaded: Boolean = false
+
+    override fun onCreate() {
+        super.onCreate()
+        serviceScope.launch {
+            userPreferencesRepository.monitoredApps.collect { apps ->
+                monitoredApps = apps
+                monitoredAppsLoaded = true
+            }
+        }
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
@@ -27,8 +50,15 @@ class NotificationCaptureService : NotificationListenerService() {
             return
         }
 
+        // Skip notifications from apps not in the monitored set.
+        // When monitoredApps hasn't been loaded yet, allow all notifications through
+        // to avoid dropping notifications during the startup race window.
+        if (monitoredAppsLoaded && sbn.packageName !in monitoredApps) {
+            return
+        }
+
         serviceScope.launch {
-            taskExtractionUseCase.processNotification(sbn)
+            taskExtractionUseCase.processNotification(sbn, sbnKey = sbn.key)
         }
     }
 

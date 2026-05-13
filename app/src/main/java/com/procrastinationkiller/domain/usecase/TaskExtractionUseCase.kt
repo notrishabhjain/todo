@@ -1,6 +1,11 @@
 package com.procrastinationkiller.domain.usecase
 
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.service.notification.StatusBarNotification
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.data.local.entity.NotificationEntity
 import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
@@ -15,8 +20,11 @@ import com.procrastinationkiller.domain.engine.whatsapp.WhatsAppIntelligenceEngi
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import com.procrastinationkiller.domain.repository.NotificationRepository
-import kotlinx.coroutines.flow.first
+import com.procrastinationkiller.presentation.MainActivity
+import com.procrastinationkiller.service.NotificationChannelManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,13 +36,80 @@ class TaskExtractionUseCase @Inject constructor(
     private val taskExtractionEngine: TaskExtractionEngine,
     private val notificationRepository: NotificationRepository,
     private val taskSuggestionDao: TaskSuggestionDao,
+    @ApplicationContext private val context: Context,
+    private val notificationDao: com.procrastinationkiller.data.local.dao.NotificationDao,
     private val whatsAppIntelligenceEngine: WhatsAppIntelligenceEngine? = null,
     private val semanticDeduplicator: SemanticDeduplicator? = null,
     private val approveTaskUseCase: ApproveTaskUseCase? = null
 ) {
 
-    suspend fun processNotification(sbn: StatusBarNotification): TaskSuggestion? {
+    companion object {
+        private const val SUGGESTION_NOTIFICATION_ID_BASE = 3000
+        private const val SUGGESTION_NOTIFICATION_ID_LIMIT = 4000
+
+        // Monotonically incrementing counter for unique notification IDs.
+        // Cycles through [3000, 4000) providing 1000 unique IDs before wrapping.
+        private val notificationIdCounter = AtomicInteger(SUGGESTION_NOTIFICATION_ID_BASE)
+
+        private fun nextNotificationId(): Int {
+            val id = notificationIdCounter.getAndIncrement()
+            if (id >= SUGGESTION_NOTIFICATION_ID_LIMIT) {
+                notificationIdCounter.compareAndSet(id + 1, SUGGESTION_NOTIFICATION_ID_BASE)
+                return SUGGESTION_NOTIFICATION_ID_BASE
+            }
+            return id
+        }
+
+        fun computeContentHash(sender: String, originalText: String, sourceApp: String): String {
+            val input = "$sender|$originalText|$sourceApp"
+            val digest = MessageDigest.getInstance("SHA-256")
+            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
+            return hashBytes.joinToString("") { "%02x".format(it) }
+        }
+
+        fun computeNotificationKey(packageName: String, title: String, content: String): String {
+            val input = "$packageName|$title|$content"
+            val digest = MessageDigest.getInstance("SHA-256")
+            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
+            return hashBytes.joinToString("") { "%02x".format(it) }
+        }
+    }
+
+    private fun postSuggestionNotification(title: String) {
+        val intent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notificationId = nextNotificationId()
+        val notification = NotificationCompat.Builder(context, NotificationChannelManager.CHANNEL_SUGGESTIONS)
+            .setContentTitle("New Task Suggestion")
+            .setContentText(title)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+        } catch (_: SecurityException) {
+            // Notification permission not granted
+        }
+    }
+
+    suspend fun processNotification(sbn: StatusBarNotification, sbnKey: String? = null): TaskSuggestion? {
         val parsed = notificationParser.parse(sbn)
+
+        // sbnKey-based dedup: skip if this sbnKey was already processed within last hour
+        if (sbnKey != null) {
+            val oneHourAgo = System.currentTimeMillis() - 3_600_000L
+            val count = notificationDao.countBySbnKeyInLastHour(sbnKey, oneHourAgo)
+            if (count > 0) {
+                return null
+            }
+        }
 
         // Check for duplicate notification by key (packageName + title + content)
         val notificationKey = computeNotificationKey(parsed.packageName, parsed.title, parsed.text)
@@ -80,7 +155,8 @@ class TaskExtractionUseCase @Inject constructor(
                     content = parsed.text,
                     timestamp = parsed.timestamp,
                     isProcessed = true,
-                    notificationKey = notificationKey
+                    notificationKey = notificationKey,
+                    sbnKey = sbnKey
                 )
                 notificationRepository.insertNotification(notificationEntity)
 
@@ -98,6 +174,7 @@ class TaskExtractionUseCase @Inject constructor(
                     contentHash = contentHash
                 )
                 taskSuggestionDao.insert(entity)
+                postSuggestionNotification(suggestion.suggestedTitle)
 
                 return suggestion
             }
@@ -134,7 +211,8 @@ class TaskExtractionUseCase @Inject constructor(
                             content = parsed.text,
                             timestamp = parsed.timestamp,
                             isProcessed = true,
-                            notificationKey = notificationKey
+                            notificationKey = notificationKey,
+                            sbnKey = sbnKey
                         )
                         notificationRepository.insertNotification(notificationEntity)
                         return null
@@ -156,9 +234,36 @@ class TaskExtractionUseCase @Inject constructor(
             content = parsed.text,
             timestamp = parsed.timestamp,
             isProcessed = false,
-            notificationKey = notificationKey
+            notificationKey = notificationKey,
+            sbnKey = sbnKey
         )
         val notificationId = notificationRepository.insertNotification(notificationEntity)
+
+        // WhatsApp multi-message: if WhatsApp text contains newlines, split and process each line
+        if (whatsAppHandler.isWhatsAppNotification(parsed.packageName) && textToAnalyze.contains("\n")) {
+            val lines = textToAnalyze.split("\n").map { it.trim() }.filter { it.isNotBlank() }
+            if (lines.size > 1) {
+                var lastSuggestion: TaskSuggestion? = null
+                for (line in lines) {
+                    val lineSuggestion = processWhatsAppLine(
+                        line = line,
+                        sender = sender,
+                        packageName = parsed.packageName,
+                        whatsAppEvalResult = whatsAppEvalResult,
+                        notificationId = notificationId,
+                        notificationEntity = notificationEntity
+                    )
+                    if (lineSuggestion != null) {
+                        lastSuggestion = lineSuggestion
+                    }
+                }
+                // Mark notification as processed
+                notificationRepository.updateNotification(
+                    notificationEntity.copy(id = notificationId, isProcessed = true)
+                )
+                return lastSuggestion
+            }
+        }
 
         // Attempt to extract a task
         var suggestion = taskExtractionEngine.extract(
@@ -206,16 +311,17 @@ class TaskExtractionUseCase @Inject constructor(
             // This runs before the VIP/non-VIP branch to prevent VIP contacts from creating
             // duplicate tasks when sending semantically identical messages with different wording.
             if (semanticDeduplicator != null) {
-                val pendingSuggestions = taskSuggestionDao.getByStatus("PENDING").first()
+                val tenMinutesAgo = System.currentTimeMillis() - 600_000L
+                val recentSuggestions = taskSuggestionDao.getAllRecentSuggestions(tenMinutesAgo)
                 val deduplicationResult = semanticDeduplicator.checkDuplicate(
-                    newText = suggestion.originalText,
+                    newText = suggestion.suggestedTitle,
                     newSender = suggestion.sender,
-                    existingSuggestions = pendingSuggestions
+                    existingSuggestions = recentSuggestions
                 )
 
                 if (deduplicationResult.isDuplicate && deduplicationResult.existingTaskId != null) {
                     // If new message has higher priority, update existing
-                    val existingEntity = pendingSuggestions.find { it.id == deduplicationResult.existingTaskId }
+                    val existingEntity = recentSuggestions.find { it.id == deduplicationResult.existingTaskId }
                     if (existingEntity != null) {
                         val existingPriority = try {
                             TaskPriority.valueOf(existingEntity.priority)
@@ -256,6 +362,7 @@ class TaskExtractionUseCase @Inject constructor(
                 approveTaskUseCase.invoke(suggestion)
             } else {
                 taskSuggestionDao.insert(entity)
+                postSuggestionNotification(suggestion.suggestedTitle)
             }
         }
 
@@ -270,19 +377,77 @@ class TaskExtractionUseCase @Inject constructor(
         return suggestion
     }
 
-    companion object {
-        fun computeContentHash(sender: String, originalText: String, sourceApp: String): String {
-            val input = "$sender|$originalText|$sourceApp"
-            val digest = MessageDigest.getInstance("SHA-256")
-            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
-            return hashBytes.joinToString("") { "%02x".format(it) }
+    private suspend fun processWhatsAppLine(
+        line: String,
+        sender: String,
+        packageName: String,
+        whatsAppEvalResult: WhatsAppEvaluationResult.ProcessResult?,
+        notificationId: Long,
+        notificationEntity: NotificationEntity
+    ): TaskSuggestion? {
+        var suggestion = taskExtractionEngine.extract(
+            text = line,
+            sourceApp = packageName,
+            sender = sender
+        ) ?: return null
+
+        // Apply WhatsApp intelligence enhancements
+        if (whatsAppEvalResult != null) {
+            val override = whatsAppEvalResult.priorityOverride
+            val priority = if (override != null && override.ordinal > suggestion.priority.ordinal) {
+                override
+            } else {
+                suggestion.priority
+            }
+            suggestion = suggestion.copy(
+                priority = priority,
+                whatsAppContext = whatsAppEvalResult.whatsAppContext,
+                autoApprove = suggestion.autoApprove || whatsAppEvalResult.autoApprove,
+                contactPriority = whatsAppEvalResult.contactPriority
+            )
         }
 
-        fun computeNotificationKey(packageName: String, title: String, content: String): String {
-            val input = "$packageName|$title|$content"
-            val digest = MessageDigest.getInstance("SHA-256")
-            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
-            return hashBytes.joinToString("") { "%02x".format(it) }
+        val contentHash = computeContentHash(suggestion.sender, suggestion.originalText, suggestion.sourceApp)
+        val existingByHash = taskSuggestionDao.findByContentHash(contentHash)
+        if (existingByHash != null) {
+            return null
         }
+
+        if (semanticDeduplicator != null) {
+            val tenMinutesAgo = System.currentTimeMillis() - 600_000L
+            val recentSuggestions = taskSuggestionDao.getAllRecentSuggestions(tenMinutesAgo)
+            val deduplicationResult = semanticDeduplicator.checkDuplicate(
+                newText = suggestion.suggestedTitle,
+                newSender = suggestion.sender,
+                existingSuggestions = recentSuggestions
+            )
+            if (deduplicationResult.isDuplicate) {
+                return null
+            }
+        }
+
+        val entity = TaskSuggestionEntity(
+            suggestedTitle = suggestion.suggestedTitle,
+            description = suggestion.description,
+            priority = suggestion.priority.name,
+            dueDate = suggestion.dueDate,
+            sourceApp = suggestion.sourceApp,
+            sender = suggestion.sender,
+            originalText = suggestion.originalText,
+            confidence = suggestion.confidence,
+            autoApprove = suggestion.autoApprove,
+            contentHash = contentHash
+        )
+
+        if (suggestion.autoApprove && approveTaskUseCase != null) {
+            val approvedEntity = entity.copy(status = "APPROVED")
+            taskSuggestionDao.insert(approvedEntity)
+            approveTaskUseCase.invoke(suggestion)
+        } else {
+            taskSuggestionDao.insert(entity)
+            postSuggestionNotification(suggestion.suggestedTitle)
+        }
+
+        return suggestion
     }
 }

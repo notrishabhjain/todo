@@ -62,10 +62,33 @@ class ReminderService : Service() {
     }
 
     private fun startForegroundWithNotification() {
+        // Post a minimal placeholder notification IMMEDIATELY to satisfy the
+        // 5-second startForeground deadline enforced on API 26+ (strict on API 31+).
+        // The notification is then updated asynchronously once task data is loaded.
+        val placeholder = buildPlaceholderNotification()
+        startForeground(NOTIFICATION_ID, placeholder)
+
+        // Now update with real data asynchronously
         serviceScope.launch {
             val notification = buildNotification()
             startForeground(NOTIFICATION_ID, notification)
         }
+    }
+
+    private fun buildPlaceholderNotification(): Notification {
+        val contentIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, NotificationChannelManager.CHANNEL_PERSISTENT)
+            .setContentTitle("Procrastination Killer")
+            .setContentText("Procrastination Killer is monitoring your tasks")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .build()
     }
 
     private fun updateNotification() {

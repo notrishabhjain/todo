@@ -160,4 +160,49 @@ class EnhancedTranscriptAnalyzerTest {
         assertTrue(items.isNotEmpty())
         assertNotNull(items.first().meetingType)
     }
+
+    @Test
+    fun `handles bold speaker format with timestamps`() {
+        val transcript = """
+            [00:59:38] **Speaker 2:** Please send the report by tomorrow
+            [00:59:43] **Speaker 4:** I will review the PR before end of day
+        """.trimIndent()
+
+        val items = analyzer.analyze(transcript)
+
+        assertTrue(items.isNotEmpty())
+        assertTrue(items.any { it.text.contains("send") || it.text.contains("review") })
+    }
+
+    @Test
+    fun `handles user exact transcript format with Hinglish`() {
+        val transcript = """
+            [00:59:38] **Speaker 2:** Kal tak report bhej dena jaldi
+            [00:59:43] **Speaker 4:** Check karna hai database issue
+        """.trimIndent()
+
+        val items = analyzer.analyze(transcript)
+
+        assertTrue(items.isNotEmpty())
+    }
+
+    @Test
+    fun `detects Devanagari text in segments`() {
+        val analyzerNoPipeline = EnhancedTranscriptAnalyzer(keywordEngine, null)
+        assertTrue(analyzerNoPipeline.containsDevanagari("यह करना है"))
+        assertTrue(!analyzerNoPipeline.containsDevanagari("this is english"))
+    }
+
+    @Test
+    fun `handles Hindi assignment patterns`() {
+        val analyzerNoPipeline = EnhancedTranscriptAnalyzer(keywordEngine, null)
+        val transcript = """
+            Manager: Rahul ko bol do report bhej dena
+        """.trimIndent()
+
+        val items = analyzerNoPipeline.analyze(transcript)
+
+        assertTrue(items.isNotEmpty())
+        assertEquals("Rahul", items.first().owner)
+    }
 }

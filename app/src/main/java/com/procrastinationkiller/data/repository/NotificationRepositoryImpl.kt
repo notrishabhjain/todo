@@ -17,4 +17,5 @@ class NotificationRepositoryImpl @Inject constructor(
     override suspend fun insertNotification(notification: NotificationEntity): Long = notificationDao.insertNotification(notification)
     override suspend fun updateNotification(notification: NotificationEntity) = notificationDao.updateNotification(notification)
     override suspend fun countProcessedByKey(key: String): Int = notificationDao.countProcessedByKey(key)
+    override suspend fun countBySbnKeyInLastHour(key: String, since: Long): Int = notificationDao.countBySbnKeyInLastHour(key, since)
 }

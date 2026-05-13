@@ -8,8 +8,8 @@ import javax.inject.Singleton
 class SemanticDeduplicator @Inject constructor() {
 
     companion object {
-        private const val SIMILARITY_THRESHOLD = 0.6f
-        private const val SAME_SENDER_BOOST = 0.1f
+        private const val SIMILARITY_THRESHOLD = 0.75f
+        private const val SAME_SENDER_BOOST = 0.0f
         private const val SHARED_ACTION_VERB_BOOST = 0.15f
 
         private val STOPWORDS = setOf(
@@ -44,7 +44,7 @@ class SemanticDeduplicator @Inject constructor() {
         var matchedTaskId: Long? = null
 
         for (suggestion in existingSuggestions) {
-            val existingTokens = tokenize(suggestion.originalText)
+            val existingTokens = tokenize(suggestion.suggestedTitle)
             val existingActionVerbs = existingTokens.filter { it in ACTION_VERBS }.toSet()
 
             var similarity = jaccardSimilarity(newTokens, existingTokens)

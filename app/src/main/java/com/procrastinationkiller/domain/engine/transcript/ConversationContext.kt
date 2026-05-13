@@ -79,7 +79,7 @@ class ConversationContextBuilder {
     }
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^([A-Za-z\\s]+):\\s*")
+        private val SPEAKER_PATTERN = TranscriptPatterns.SPEAKER_PATTERN
         private val TOPIC_PATTERN = Regex("(?:discuss|talking about|topic is|agenda:?)\\s+(.+?)(?:\\.|\\n|$)")
 
         private val STANDUP_KEYWORDS = listOf(

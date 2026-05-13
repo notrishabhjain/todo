@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.procrastinationkiller.data.local.entity.TaskEntity
 import com.procrastinationkiller.domain.engine.TranscriptActionItem
 import com.procrastinationkiller.domain.engine.TranscriptAnalyzer
+import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,8 @@ data class ActionItemUi(
 @HiltViewModel
 class MeetingTranscriptViewModel @Inject constructor(
     private val transcriptAnalyzer: TranscriptAnalyzer,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    private val hybridClassificationPipeline: HybridClassificationPipeline
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MeetingTranscriptUiState())
@@ -48,7 +50,7 @@ class MeetingTranscriptViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isAnalyzing = true)
 
         viewModelScope.launch {
-            val items = transcriptAnalyzer.analyze(text)
+            val items = transcriptAnalyzer.enhancedAnalyze(text, hybridClassificationPipeline)
             _uiState.value = _uiState.value.copy(
                 actionItems = items.map { ActionItemUi(it) },
                 isAnalyzing = false,

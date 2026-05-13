@@ -142,7 +142,7 @@ class InboxViewModelWhatsAppTest {
     }
 
     @Test
-    fun `auto-approve suggestions from DB are automatically approved`() = runTest {
+    fun `auto-approve suggestions from DB appear in suggestions list`() = runTest {
         // Insert a suggestion with autoApprove=true directly into the DAO
         fakeSuggestionDao.insert(
             TaskSuggestionEntity(
@@ -161,10 +161,10 @@ class InboxViewModelWhatsAppTest {
         viewModel = InboxViewModel(approveUseCase, rejectUseCase, fakeSuggestionDao, fakeContactRepository)
         advanceUntilIdle()
 
-        // Auto-approve suggestions should be processed and removed from the list
-        assertTrue(viewModel.uiState.value.suggestions.isEmpty())
-        // The task should have been created in the repository
-        assertTrue(fakeTaskRepository.getTasks().any { it.title == "Auto Task" })
+        // Auto-approve is now handled in TaskExtractionUseCase, not in the ViewModel.
+        // PENDING suggestions with autoApprove=true still show in the inbox if they reach here.
+        assertEquals(1, viewModel.uiState.value.suggestions.size)
+        assertEquals("Auto Task", viewModel.uiState.value.suggestions[0].suggestedTitle)
     }
 
     private fun createWhatsAppSuggestion(
@@ -218,6 +218,9 @@ class InboxViewModelWhatsAppTest {
 
         override suspend fun findByContentHash(hash: String): TaskSuggestionEntity? =
             suggestions.value.find { it.contentHash == hash }
+
+        override suspend fun getAllRecentSuggestions(since: Long): List<TaskSuggestionEntity> =
+            suggestions.value.filter { it.createdAt > since }
     }
 
     private class FakeTaskRepositoryForWhatsApp : TaskRepository {

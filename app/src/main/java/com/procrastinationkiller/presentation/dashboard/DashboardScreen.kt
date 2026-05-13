@@ -48,7 +48,9 @@ import com.procrastinationkiller.presentation.components.TaskCard
 fun DashboardScreen(
     onTaskClick: (Long) -> Unit,
     isNotificationListenerEnabled: Boolean = true,
+    isPostNotificationsGranted: Boolean = true,
     onOpenNotificationSettings: () -> Unit = {},
+    onRequestPostNotifications: () -> Unit = {},
     onNavigateToTranscript: () -> Unit = {},
     onAddTaskManually: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
@@ -168,6 +170,49 @@ fun DashboardScreen(
                             )
                             Button(onClick = onOpenNotificationSettings) {
                                 Text("Grant Access")
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!isNotificationListenerEnabled || !isPostNotificationsGranted) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Notification Health",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (!isNotificationListenerEnabled) {
+                                Text(
+                                    text = "Warning: Notification listener is disabled. Task detection will not work.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                            if (!isPostNotificationsGranted) {
+                                Text(
+                                    text = "Warning: POST_NOTIFICATIONS permission not granted. Reminders will be silent.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(onClick = onRequestPostNotifications) {
+                                    Text("Grant Permission")
+                                }
                             }
                         }
                     }
