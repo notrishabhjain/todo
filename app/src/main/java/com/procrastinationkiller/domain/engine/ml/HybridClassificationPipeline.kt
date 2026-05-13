@@ -1,6 +1,7 @@
 package com.procrastinationkiller.domain.engine.ml
 
 import android.util.Log
+import com.procrastinationkiller.BuildConfig
 import com.procrastinationkiller.domain.engine.KeywordAnalysis
 import com.procrastinationkiller.domain.engine.KeywordEngine
 import com.procrastinationkiller.domain.model.TaskPriority
@@ -79,7 +80,9 @@ class HybridClassificationPipeline @Inject constructor(
             }
         }
 
-        Log.d("HybridPipeline", "Classification: source=${result.source}, isActionable=${result.isActionable}, intent=${result.intent}, confidence=${result.confidence}")
+        if (BuildConfig.DEBUG) {
+            Log.d("HybridPipeline", "Classification: source=${result.source}, isActionable=${result.isActionable}, intent=${result.intent}, confidence=${result.confidence}")
+        }
         return result
     }
 }

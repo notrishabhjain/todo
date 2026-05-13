@@ -185,6 +185,22 @@ class WhatsAppIntelligenceEngineTest {
         assertEquals(ContactPriority.VIP, processResult.contactPriority)
     }
 
+    @Test
+    fun `short sender name does not trigger fuzzy matching to prevent false positives`() = runBlocking {
+        fakeRepository.addContact(
+            ContactEntity(id = 1, name = "Alice", priority = "VIP")
+        )
+
+        // Sender "Al" is too short (< 4 chars) for fuzzy matching, so it should not match "Alice"
+        val result = engine.evaluate("Al", "Do this task now", false)
+
+        assertTrue(result is WhatsAppEvaluationResult.ProcessResult)
+        val processResult = result as WhatsAppEvaluationResult.ProcessResult
+        // Should NOT match Alice via fuzzy since "Al" is too short
+        assertEquals(ContactPriority.NORMAL, processResult.contactPriority)
+        assertFalse(processResult.autoApprove)
+    }
+
     private class FakeContactRepository : ContactRepository {
         private val contacts = MutableStateFlow<List<ContactEntity>>(emptyList())
         val incrementedIds = mutableListOf<Long>()

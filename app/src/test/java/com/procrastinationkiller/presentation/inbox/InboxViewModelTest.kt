@@ -162,6 +162,9 @@ class InboxViewModelTest {
         override fun getByStatus(status: String): Flow<List<TaskSuggestionEntity>> =
             suggestions.map { list -> list.filter { it.status == status } }
 
+        override fun getPendingNonAutoApprove(status: String): Flow<List<TaskSuggestionEntity>> =
+            suggestions.map { list -> list.filter { it.status == status && !it.autoApprove } }
+
         override suspend fun updateStatus(id: Long, status: String) {
             suggestions.value = suggestions.value.map {
                 if (it.id == id) it.copy(status = status) else it

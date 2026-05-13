@@ -5,6 +5,7 @@ import com.procrastinationkiller.domain.engine.TranscriptActionItem
 import com.procrastinationkiller.domain.engine.TranscriptAnalyzer
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.model.TaskPriority
+import kotlin.coroutines.cancellation.CancellationException
 
 class EnhancedTranscriptAnalyzer(
     private val keywordEngine: KeywordEngine,
@@ -76,6 +77,8 @@ class EnhancedTranscriptAnalyzer(
             }
 
             deduplicateItems(rawItems)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             emptyList()
         }

@@ -42,9 +42,8 @@ class InboxViewModel @Inject constructor(
 
     private fun loadSuggestions() {
         viewModelScope.launch {
-            taskSuggestionDao.getByStatus("PENDING").collect { entities ->
+            taskSuggestionDao.getPendingNonAutoApprove("PENDING").collect { entities ->
                 val suggestions = entities
-                    .filter { !it.autoApprove }
                     .map { entity ->
                     TaskSuggestion(
                         id = entity.id,

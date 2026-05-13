@@ -1,5 +1,6 @@
 package com.procrastinationkiller.presentation.settings
 
+import android.Manifest
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -93,6 +94,14 @@ fun SettingsScreen(
         }
     }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            contactPickerLauncher.launch(null)
+        }
+    }
+
     if (showAddContactDialog || showAddContactDialogWithPicker) {
         AddContactDialog(
             initialName = if (showAddContactDialogWithPicker) pendingContactName else "",
@@ -110,7 +119,13 @@ fun SettingsScreen(
             onPickFromContacts = {
                 showAddContactDialog = false
                 showAddContactDialogWithPicker = false
-                contactPickerLauncher.launch(null)
+                val hasPermission = context.checkSelfPermission(Manifest.permission.READ_CONTACTS) ==
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                if (hasPermission) {
+                    contactPickerLauncher.launch(null)
+                } else {
+                    permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                }
             }
         )
     }
