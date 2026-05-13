@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.procrastinationkiller.domain.engine.ReminderFrequency
 import com.procrastinationkiller.domain.model.ReminderMode
+import com.procrastinationkiller.domain.repository.OnboardingRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,7 +22,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "us
 @Singleton
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : OnboardingRepository {
     private object PreferencesKeys {
         val REMINDER_MODE = stringPreferencesKey("reminder_mode")
         val REMINDER_FREQUENCY = stringPreferencesKey("reminder_frequency")
@@ -57,7 +58,7 @@ class UserPreferencesRepository @Inject constructor(
         )
     }
 
-    val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    override val onboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
     }
 
@@ -83,7 +84,7 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setOnboardingCompleted(completed: Boolean) {
+    override suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.ONBOARDING_COMPLETED] = completed
         }
