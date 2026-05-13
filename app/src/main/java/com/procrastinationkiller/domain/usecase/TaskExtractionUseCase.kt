@@ -218,11 +218,12 @@ class TaskExtractionUseCase @Inject constructor(
             sender = parsed.sender
         }
 
-        // sbnKey-based dedup: skip for VIP auto-approve (WhatsApp), apply for others
+        // sbnKey-based dedup: VIP uses 5-second window (prevent double-fire), others use 1-hour window
         val isVipAutoApprove = whatsAppEvalResult?.autoApprove == true
-        if (!isVipAutoApprove && sbnKey != null) {
-            val oneHourAgo = System.currentTimeMillis() - 3_600_000L
-            val count = notificationDao.countBySbnKeyInLastHour(sbnKey, oneHourAgo)
+        if (sbnKey != null) {
+            val dedupWindow = if (isVipAutoApprove) 5_000L else 3_600_000L
+            val windowStart = System.currentTimeMillis() - dedupWindow
+            val count = notificationDao.countBySbnKeyInLastHour(sbnKey, windowStart)
             if (count > 0) {
                 return null
             }

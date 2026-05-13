@@ -148,4 +148,182 @@ class NotificationCaptureServiceTest {
             )
         )
     }
+
+    @Test
+    fun `WhatsApp syncing messages is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "Syncing messages"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp backup in progress is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "Backup in progress"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp no internet connection is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "No internet connection"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp security code changed is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "Security",
+                text = "Security code changed"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp group membership changes are filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "Group",
+                text = "John left the group"
+            )
+        )
+    }
+
+    // Gmail system notification filter tests
+
+    @Test
+    fun `Gmail syncing mail is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = "Gmail",
+                text = "Syncing mail"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail deleted notification is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = null,
+                text = "Deleted"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail conversation archived is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = "Gmail",
+                text = "Conversation archived"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail undo notification is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = null,
+                text = "Undo"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail marked as read is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = null,
+                text = "Marked as read"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail sending notification is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = null,
+                text = "Sending"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail no new mail is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = "Gmail",
+                text = "No new mail"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail Lite system notification is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm.lite",
+                title = null,
+                text = "Syncing"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail real email is not filtered`() {
+        assertFalse(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = "John Smith",
+                text = "Hey, please review the document I sent"
+            )
+        )
+    }
+
+    @Test
+    fun `non-Gmail notification is not filtered by Gmail filter`() {
+        assertFalse(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.whatsapp",
+                title = null,
+                text = "Syncing"
+            )
+        )
+    }
+
+    @Test
+    fun `Gmail null title and text is not filtered`() {
+        assertFalse(
+            NotificationCaptureService.isGmailSystemNotification(
+                packageName = "com.google.android.gm",
+                title = null,
+                text = null
+            )
+        )
+    }
 }
