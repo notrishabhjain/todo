@@ -13,18 +13,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,14 +46,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.procrastinationkiller.domain.engine.ReminderFrequency
+import com.procrastinationkiller.domain.model.ContactPriority
 import com.procrastinationkiller.domain.model.ReminderMode
 
 @Composable
 fun SettingsScreen(
     onNavigateToKeywords: () -> Unit = {},
+    onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToInsights: () -> Unit = {},
+    onNavigateToExportImport: () -> Unit = {},
+    onNavigateToTranscript: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    var showAddContactDialog by remember { mutableStateOf(false) }
+
+    if (showAddContactDialog) {
+        AddContactDialog(
+            onDismiss = { showAddContactDialog = false },
+            onConfirm = { name, priority ->
+                viewModel.addContact(name, priority)
+                showAddContactDialog = false
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -105,6 +131,15 @@ fun SettingsScreen(
             )
         }
 
+        item {
+            OutlinedButton(
+                onClick = { showAddContactDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("+ Add Contact")
+            }
+        }
+
         // Keyword Management Section
         item {
             SectionHeader("Keyword Management")
@@ -138,6 +173,139 @@ fun SettingsScreen(
                         )
                     }
                     Icon(Icons.Default.Edit, contentDescription = "Edit Keywords")
+                }
+            }
+        }
+
+        // Tools & Reports Section
+        item {
+            SectionHeader("Tools & Reports")
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToAnalytics() },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Analytics Dashboard",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "View task completion trends and statistics",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.BarChart, contentDescription = "Analytics")
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToInsights() },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Productivity Insights",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "See productivity patterns and recommendations",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.Lightbulb, contentDescription = "Insights")
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToExportImport() },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Export/Import Data",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Backup or restore your task data",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.SwapHoriz, contentDescription = "Export/Import")
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToTranscript() },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Meeting Transcript",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = "Extract tasks from meeting notes",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.Description, contentDescription = "Meeting Transcript")
                 }
             }
         }
@@ -361,4 +529,59 @@ private fun ContactItem(
             }
         }
     }
+}
+
+@Composable
+private fun AddContactDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, ContactPriority) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedPriority by remember { mutableStateOf(ContactPriority.VIP) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add VIP Contact") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Contact Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Text(
+                    text = "Priority",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ContactPriority.entries.forEach { priority ->
+                        FilterChip(
+                            selected = selectedPriority == priority,
+                            onClick = { selectedPriority = priority },
+                            label = { Text(priority.displayName) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim(), selectedPriority) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

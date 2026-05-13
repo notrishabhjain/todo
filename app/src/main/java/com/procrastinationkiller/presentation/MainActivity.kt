@@ -1,8 +1,10 @@
 package com.procrastinationkiller.presentation
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -10,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -18,9 +21,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -54,6 +63,25 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun MainScreen() {
+    val mainViewModel: MainViewModel = hiltViewModel()
+    val startDestination by mainViewModel.startDestination.collectAsState()
+    val isNotificationListenerEnabled by mainViewModel.isNotificationListenerEnabled.collectAsState()
+    val context = LocalContext.current
+
+    if (startDestination == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        mainViewModel.refreshNotificationListenerStatus()
+    }
+
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -96,7 +124,16 @@ private fun MainScreen() {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            NavGraph(navController = navController)
+            NavGraph(
+                navController = navController,
+                startDestination = startDestination!!,
+                isNotificationListenerEnabled = isNotificationListenerEnabled,
+                onOpenNotificationSettings = {
+                    val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                }
+            )
         }
     }
 }

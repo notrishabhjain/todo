@@ -3,8 +3,10 @@ package com.procrastinationkiller.di
 import com.procrastinationkiller.data.repository.ContactRepositoryImpl
 import com.procrastinationkiller.data.repository.NotificationRepositoryImpl
 import com.procrastinationkiller.data.repository.TaskRepositoryImpl
+import com.procrastinationkiller.data.repository.UserPreferencesRepository
 import com.procrastinationkiller.domain.repository.ContactRepository
 import com.procrastinationkiller.domain.repository.NotificationRepository
+import com.procrastinationkiller.domain.repository.OnboardingRepository
 import com.procrastinationkiller.domain.repository.TaskRepository
 import dagger.Binds
 import dagger.Module
@@ -63,4 +65,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindContactRepository(impl: ContactRepositoryImpl): ContactRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOnboardingRepository(impl: UserPreferencesRepository): OnboardingRepository
 }

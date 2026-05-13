@@ -94,6 +94,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val contact = ContactEntity(
                 name = name,
+                priority = priority.name,
                 isEscalationTarget = priority == ContactPriority.VIP || priority == ContactPriority.HIGH_PRIORITY
             )
             contactRepository.insertContact(contact)
