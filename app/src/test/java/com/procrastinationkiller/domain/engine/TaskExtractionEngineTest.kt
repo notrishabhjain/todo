@@ -1,5 +1,6 @@
 package com.procrastinationkiller.domain.engine
 
+import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.model.TaskPriority
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -159,6 +160,109 @@ class TaskExtractionEngineTest {
             sender = "Unknown"
         )
 
+        assertNull(suggestion)
+    }
+
+    @Test
+    fun `extracts task with pipeline present when keyword engine finds action keywords`() = runBlocking {
+        // Create a real pipeline (ONNX model unavailable, falls back to rules)
+        val featureExtractor = com.procrastinationkiller.domain.engine.ml.TextFeatureExtractor()
+        val onnxClassifier = com.procrastinationkiller.domain.engine.ml.OnnxIntentClassifier()
+        val ruleBasedClassifier = com.procrastinationkiller.domain.engine.ml.RuleBasedIntentClassifier()
+
+        val pipeline = HybridClassificationPipeline(
+            textFeatureExtractor = featureExtractor,
+            onnxIntentClassifier = onnxClassifier,
+            ruleBasedIntentClassifier = ruleBasedClassifier
+        )
+
+        val engineWithPipeline = TaskExtractionEngine(
+            keywordEngine = keywordEngine,
+            classificationPipeline = pipeline
+        )
+
+        // Text with clear action keyword "send" - keyword engine says actionable
+        val suggestion = engineWithPipeline.extract(
+            text = "Send the report tomorrow",
+            sourceApp = "com.whatsapp",
+            sender = "Boss"
+        )
+
+        // With OR logic, keyword engine's isActionable=true ensures extraction
+        assertNotNull(suggestion)
+        assertEquals("com.whatsapp", suggestion!!.sourceApp)
+        assertEquals("Boss", suggestion.sender)
+    }
+
+    @Test
+    fun `OR logic ensures keyword actionability works even with pipeline`() = runBlocking {
+        // Without a pipeline, keyword engine directly determines actionability
+        val noPipelineEngine = TaskExtractionEngine(
+            keywordEngine = keywordEngine,
+            classificationPipeline = null
+        )
+
+        val withoutPipeline = noPipelineEngine.extract(
+            text = "Call the client about the project",
+            sourceApp = "com.slack",
+            sender = "Manager"
+        )
+        assertNotNull(withoutPipeline)
+
+        // With a real pipeline (ONNX unavailable) - OR logic at pipeline level
+        // should still extract a task since keyword engine finds "call" as action keyword
+        val featureExtractor = com.procrastinationkiller.domain.engine.ml.TextFeatureExtractor()
+        val onnxClassifier = com.procrastinationkiller.domain.engine.ml.OnnxIntentClassifier()
+        val ruleBasedClassifier = com.procrastinationkiller.domain.engine.ml.RuleBasedIntentClassifier()
+
+        val pipeline = HybridClassificationPipeline(
+            textFeatureExtractor = featureExtractor,
+            onnxIntentClassifier = onnxClassifier,
+            ruleBasedIntentClassifier = ruleBasedClassifier
+        )
+
+        val withPipelineEngine = TaskExtractionEngine(
+            keywordEngine = keywordEngine,
+            classificationPipeline = pipeline
+        )
+
+        val withPipeline = withPipelineEngine.extract(
+            text = "Call the client about the project",
+            sourceApp = "com.slack",
+            sender = "Manager"
+        )
+
+        // Both should extract a task - the OR logic ensures pipeline does not suppress
+        // keyword-based actionability
+        assertNotNull(withPipeline)
+    }
+
+    @Test
+    fun `non-actionable text returns null even with OR logic`() = runBlocking {
+        // Ensure that truly non-actionable text is still rejected
+        val featureExtractor = com.procrastinationkiller.domain.engine.ml.TextFeatureExtractor()
+        val onnxClassifier = com.procrastinationkiller.domain.engine.ml.OnnxIntentClassifier()
+        val ruleBasedClassifier = com.procrastinationkiller.domain.engine.ml.RuleBasedIntentClassifier()
+
+        val pipeline = HybridClassificationPipeline(
+            textFeatureExtractor = featureExtractor,
+            onnxIntentClassifier = onnxClassifier,
+            ruleBasedIntentClassifier = ruleBasedClassifier
+        )
+
+        val engineWithPipeline = TaskExtractionEngine(
+            keywordEngine = keywordEngine,
+            classificationPipeline = pipeline
+        )
+
+        // Non-actionable text - no action keywords
+        val suggestion = engineWithPipeline.extract(
+            text = "Good morning everyone!",
+            sourceApp = "com.whatsapp",
+            sender = "Friend"
+        )
+
+        // Neither pipeline nor keyword engine finds this actionable
         assertNull(suggestion)
     }
 }
