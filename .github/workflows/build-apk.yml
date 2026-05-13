@@ -59,21 +59,28 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          # Note: GitHub Actions wraps artifacts in a ZIP. Extract the ZIP to get the APK file.
-          name: procrastination-killer-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          compression-level: 0
+      - name: List APK outputs
+        run: |
+          echo "=== Debug APKs ==="
+          find app/build/outputs/apk/debug -name "*.apk" -type f
+          echo "=== Release APKs ==="
+          find app/build/outputs/apk/release -name "*.apk" -type f
 
-      - name: Upload Release APK
+      - name: Upload Debug APKs
         uses: actions/upload-artifact@v4
         with:
-          # Note: GitHub Actions wraps artifacts in a ZIP. Extract the ZIP to get the APK file.
-          name: procrastination-killer-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: procrastination-killer-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
           compression-level: 0
+          if-no-files-found: error
+
+      - name: Upload Release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: procrastination-killer-release-apks
+          path: app/build/outputs/apk/release/*.apk
+          compression-level: 0
+          if-no-files-found: error
 
   release:
     name: Create GitHub Release
@@ -106,5 +113,5 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/release/*.apk
           generate_release_notes: true
