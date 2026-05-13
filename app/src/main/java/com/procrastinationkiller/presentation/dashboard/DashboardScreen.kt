@@ -231,7 +231,8 @@ fun DashboardScreen(
                 items(uiState.todaysTasks, key = { it.id }) { task ->
                     TaskCard(
                         task = task,
-                        onClick = { onTaskClick(task.id) }
+                        onClick = { onTaskClick(task.id) },
+                        onComplete = { viewModel.completeTask(task.id) }
                     )
                 }
             }

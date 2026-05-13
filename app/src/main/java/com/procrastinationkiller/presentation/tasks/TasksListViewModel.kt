@@ -9,6 +9,7 @@ import com.procrastinationkiller.domain.repository.TaskRepository
 import com.procrastinationkiller.domain.usecase.GetTasksUseCase
 import com.procrastinationkiller.domain.usecase.TaskFilter
 import com.procrastinationkiller.domain.usecase.TaskSortOrder
+import com.procrastinationkiller.domain.usecase.UpdateTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +31,8 @@ data class TasksListUiState(
 @HiltViewModel
 class TasksListViewModel @Inject constructor(
     private val getTasksUseCase: GetTasksUseCase,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    private val updateTaskUseCase: UpdateTaskUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TasksListUiState())
@@ -98,6 +100,12 @@ class TasksListViewModel @Inject constructor(
             )
             taskRepository.insertTask(taskEntity)
             hideCreateDialog()
+        }
+    }
+
+    fun completeTask(taskId: Long) {
+        viewModelScope.launch {
+            updateTaskUseCase.updateStatus(taskId, TaskStatus.COMPLETED)
         }
     }
 }
