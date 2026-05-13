@@ -56,6 +56,9 @@ fun NavGraph(
                 onOpenNotificationSettings = onOpenNotificationSettings,
                 onNavigateToTranscript = {
                     navController.navigate(Routes.MEETING_TRANSCRIPT)
+                },
+                onAddTaskManually = {
+                    navController.navigate(Routes.TASKS)
                 }
             )
         }

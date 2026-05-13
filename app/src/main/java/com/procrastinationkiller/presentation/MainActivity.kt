@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -74,6 +76,10 @@ private fun MainScreen() {
             CircularProgressIndicator()
         }
         return
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        mainViewModel.refreshNotificationListenerStatus()
     }
 
     val navController = rememberNavController()

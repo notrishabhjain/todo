@@ -5,7 +5,7 @@ import android.content.Context
 import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.procrastinationkiller.data.repository.UserPreferencesRepository
+import com.procrastinationkiller.domain.repository.OnboardingRepository
 import com.procrastinationkiller.presentation.navigation.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val userPreferencesRepository: UserPreferencesRepository,
+    private val onboardingRepository: OnboardingRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -34,7 +34,7 @@ class MainViewModel @Inject constructor(
 
     private fun determineStartDestination() {
         viewModelScope.launch {
-            val onboardingCompleted = userPreferencesRepository.onboardingCompleted.first()
+            val onboardingCompleted = onboardingRepository.onboardingCompleted.first()
             val listenerEnabled = checkNotificationListenerEnabled()
             _isNotificationListenerEnabled.value = listenerEnabled
 
