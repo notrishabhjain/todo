@@ -27,6 +27,7 @@ class TasksListViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRepository: FakeTaskRepository
     private lateinit var getTasksUseCase: GetTasksUseCase
+    private lateinit var updateTaskUseCase: com.procrastinationkiller.domain.usecase.UpdateTaskUseCase
     private lateinit var viewModel: TasksListViewModel
 
     @BeforeEach
@@ -34,6 +35,7 @@ class TasksListViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeTaskRepository()
         getTasksUseCase = GetTasksUseCase(fakeRepository)
+        updateTaskUseCase = com.procrastinationkiller.domain.usecase.UpdateTaskUseCase(fakeRepository)
     }
 
     @AfterEach
@@ -49,7 +51,7 @@ class TasksListViewModelTest {
                 createTask(2, "Task 2")
             )
         )
-        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository)
+        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository, updateTaskUseCase)
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isLoading)
@@ -65,7 +67,7 @@ class TasksListViewModelTest {
                 createTask(3, "High task 2", priority = "HIGH")
             )
         )
-        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository)
+        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository, updateTaskUseCase)
         advanceUntilIdle()
 
         viewModel.setFilter(TaskPriority.HIGH)
@@ -83,7 +85,7 @@ class TasksListViewModelTest {
                 createTask(2, "Task 2", priority = "LOW")
             )
         )
-        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository)
+        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository, updateTaskUseCase)
         advanceUntilIdle()
 
         viewModel.setFilter(TaskPriority.HIGH)
@@ -98,7 +100,7 @@ class TasksListViewModelTest {
 
     @Test
     fun `showCreateDialog toggles dialog state`() = runTest {
-        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository)
+        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository, updateTaskUseCase)
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.showCreateDialog)
@@ -110,7 +112,7 @@ class TasksListViewModelTest {
 
     @Test
     fun `createTask adds task to repository`() = runTest {
-        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository)
+        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository, updateTaskUseCase)
         advanceUntilIdle()
 
         viewModel.createTask("New Task", "Description", TaskPriority.HIGH, null)
@@ -119,6 +121,26 @@ class TasksListViewModelTest {
         assertEquals(1, viewModel.uiState.value.tasks.size)
         assertEquals("New Task", viewModel.uiState.value.tasks[0].title)
         assertEquals("HIGH", viewModel.uiState.value.tasks[0].priority)
+    }
+
+    @Test
+    fun `completeTask marks task as completed`() = runTest {
+        fakeRepository.setTasks(
+            listOf(
+                createTask(1, "Task 1", status = "PENDING"),
+                createTask(2, "Task 2", status = "PENDING")
+            )
+        )
+        val updateTaskUseCase = com.procrastinationkiller.domain.usecase.UpdateTaskUseCase(fakeRepository)
+        viewModel = TasksListViewModel(getTasksUseCase, fakeRepository, updateTaskUseCase)
+        advanceUntilIdle()
+
+        viewModel.completeTask(1)
+        advanceUntilIdle()
+
+        val updatedTask = fakeRepository.getTaskById(1)
+        assertEquals("COMPLETED", updatedTask?.status)
+        assertTrue(updatedTask?.completedAt != null)
     }
 
     private fun createTask(

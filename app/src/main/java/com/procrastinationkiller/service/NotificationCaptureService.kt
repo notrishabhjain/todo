@@ -42,6 +42,18 @@ class NotificationCaptureService : NotificationListenerService() {
     }
 
     private fun isSystemNotification(sbn: StatusBarNotification): Boolean {
+        val allowedDialerPackages = setOf(
+            "com.android.dialer",
+            "com.samsung.android.dialer",
+            "com.google.android.dialer",
+            "com.android.phone",
+            "com.android.incallui"
+        )
+
+        if (allowedDialerPackages.contains(sbn.packageName)) {
+            return false
+        }
+
         val systemPackages = listOf(
             "android",
             "com.android.systemui",

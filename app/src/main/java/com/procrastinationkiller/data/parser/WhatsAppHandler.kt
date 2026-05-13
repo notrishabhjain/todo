@@ -75,16 +75,29 @@ class WhatsAppHandler @Inject constructor() {
     private fun detectGroupFormat(title: String, text: String): Boolean {
         // WhatsApp group messages often have format "Name: message" in text
         // or multiple messages indicator
-        return text.contains(": ") && !title.contains(":")
+        // Also detect if text starts with a name followed by colon (common group format)
+        if (text.contains(": ") && !title.contains(":")) {
+            return true
+        }
+        // Check for "N messages" pattern indicating group summary
+        if (text.matches(Regex("\\d+\\s+messages?"))) {
+            return true
+        }
+        return false
     }
 
     fun getMessageContent(whatsAppMessage: WhatsAppMessage): String {
         // For group messages, the text may include "Sender: actual message"
         val text = whatsAppMessage.text
-        return if (whatsAppMessage.isGroupChat && text.contains(":")) {
-            text.substringAfter(":").trim()
-        } else {
-            text
+        if (whatsAppMessage.isGroupChat && text.contains(":")) {
+            val afterColon = text.substringAfter(":").trim()
+            // If the content after stripping sender prefix is too short or empty,
+            // return the full text to give the extraction engine more context
+            if (afterColon.length < 3) {
+                return text
+            }
+            return afterColon
         }
+        return text
     }
 }

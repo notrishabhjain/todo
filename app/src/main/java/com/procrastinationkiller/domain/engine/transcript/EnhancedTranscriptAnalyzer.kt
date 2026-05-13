@@ -2,6 +2,7 @@ package com.procrastinationkiller.domain.engine.transcript
 
 import com.procrastinationkiller.domain.engine.KeywordEngine
 import com.procrastinationkiller.domain.engine.TranscriptActionItem
+import com.procrastinationkiller.domain.engine.TranscriptAnalyzer
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.model.TaskPriority
 
@@ -67,13 +68,15 @@ class EnhancedTranscriptAnalyzer(
         val lines = transcript.split("\n").filter { it.isNotBlank() }
         var currentSpeaker: String? = null
 
-        for (line in lines) {
+        for (rawLine in lines) {
+            val line = TranscriptAnalyzer.stripTimestamps(rawLine)
             val speakerMatch = SPEAKER_PATTERN.find(line)
             if (speakerMatch != null) {
                 currentSpeaker = speakerMatch.groupValues[1].trim()
                 val remainingText = line.substring(speakerMatch.range.last + 1).trim()
                 if (remainingText.isNotEmpty()) {
-                    val sentences = remainingText.split(SENTENCE_DELIMITER)
+                    val sentences = TranscriptAnalyzer.removeFillerWords(remainingText)
+                        .split(SENTENCE_DELIMITER)
                         .map { it.trim() }
                         .filter { it.isNotEmpty() }
                     for (sentence in sentences) {
@@ -81,7 +84,8 @@ class EnhancedTranscriptAnalyzer(
                     }
                 }
             } else {
-                val sentences = line.split(SENTENCE_DELIMITER)
+                val sentences = TranscriptAnalyzer.removeFillerWords(line)
+                    .split(SENTENCE_DELIMITER)
                     .map { it.trim() }
                     .filter { it.isNotEmpty() }
                 for (sentence in sentences) {
@@ -218,7 +222,7 @@ class EnhancedTranscriptAnalyzer(
     )
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^([A-Za-z\\s]+):\\s*")
+        private val SPEAKER_PATTERN = Regex("^(?:\\[?[\\d:.-]+\\]?[\\s-]*)?([A-Za-z][A-Za-z\\s]*)(?:\\s*\\[?[\\d:.-]*\\]?)?:\\s*")
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")

@@ -2,6 +2,8 @@ package com.procrastinationkiller.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.procrastinationkiller.data.local.AppDatabase
 import com.procrastinationkiller.data.local.dao.AchievementDao
 import com.procrastinationkiller.data.local.dao.AnalyticsDao
@@ -24,18 +26,33 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE notifications ADD COLUMN notificationKey TEXT")
+            db.execSQL("ALTER TABLE task_suggestions ADD COLUMN contentHash TEXT")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_notificationKey ON notifications(notificationKey)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_task_suggestions_contentHash ON task_suggestions(contentHash)")
+        }
+    }
+
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_notifications_notificationKey ON notifications(notificationKey)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_task_suggestions_contentHash ON task_suggestions(contentHash)")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        // TODO: Replace fallbackToDestructiveMigration() with incremental Migration objects
-        // before production release. Destructive migration drops all tables (learning data,
-        // contacts, task suggestions) on any schema version bump. Acceptable during
-        // development but must be addressed before user-facing releases.
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
             "procrastination_killer_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

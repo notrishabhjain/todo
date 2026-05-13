@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -98,6 +99,26 @@ class DashboardViewModelTest {
         assertFalse(viewModel.uiState.value.isLoading)
         assertEquals(0, viewModel.uiState.value.pendingTaskCount)
         assertEquals(0f, viewModel.uiState.value.completionRate)
+    }
+
+    @Test
+    fun `completeTask marks task as completed`() = runTest {
+        val deadline = System.currentTimeMillis() + 1000 // due today-ish
+        fakeRepository.setTasks(
+            listOf(
+                createTask(1, "Task 1", status = "PENDING", deadline = deadline),
+                createTask(2, "Task 2", status = "PENDING", deadline = deadline)
+            )
+        )
+        viewModel = DashboardViewModel(fakeRepository)
+        advanceUntilIdle()
+
+        viewModel.completeTask(1)
+        advanceUntilIdle()
+
+        val updatedTask = fakeRepository.getTaskById(1)
+        assertEquals("COMPLETED", updatedTask?.status)
+        assertTrue(updatedTask?.completedAt != null)
     }
 
     private fun createTask(

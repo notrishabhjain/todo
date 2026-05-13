@@ -24,4 +24,7 @@ interface NotificationDao {
 
     @Update
     suspend fun updateNotification(notification: NotificationEntity)
+
+    @Query("SELECT COUNT(*) FROM notifications WHERE notificationKey = :key AND isProcessed = 1")
+    suspend fun countProcessedByKey(key: String): Int
 }

@@ -3,9 +3,11 @@ package com.procrastinationkiller.presentation.taskdetail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Intent
 import com.procrastinationkiller.data.local.entity.TaskEntity
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskStatus
+import com.procrastinationkiller.domain.usecase.CalendarIntegrationHelper
 import com.procrastinationkiller.domain.usecase.UpdateTaskUseCase
 import com.procrastinationkiller.domain.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,14 +25,16 @@ data class TaskDetailUiState(
     val editTitle: String = "",
     val editDescription: String = "",
     val editPriority: TaskPriority = TaskPriority.MEDIUM,
-    val message: String? = null
+    val message: String? = null,
+    val calendarIntent: Intent? = null
 )
 
 @HiltViewModel
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val taskRepository: TaskRepository,
-    private val updateTaskUseCase: UpdateTaskUseCase
+    private val updateTaskUseCase: UpdateTaskUseCase,
+    private val calendarIntegrationHelper: CalendarIntegrationHelper
 ) : ViewModel() {
 
     private val taskId: Long = savedStateHandle.get<Long>("taskId") ?: -1L
@@ -127,5 +131,15 @@ class TaskDetailViewModel @Inject constructor(
 
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
+    }
+
+    fun addToCalendar() {
+        val task = _uiState.value.task ?: return
+        val intent = calendarIntegrationHelper.createCalendarIntent(task)
+        _uiState.update { it.copy(calendarIntent = intent) }
+    }
+
+    fun clearCalendarIntent() {
+        _uiState.update { it.copy(calendarIntent = null) }
     }
 }

@@ -171,6 +171,9 @@ class InboxViewModelTest {
         override suspend fun delete(id: Long) {
             suggestions.value = suggestions.value.filter { it.id != id }
         }
+
+        override suspend fun findByContentHash(hash: String): TaskSuggestionEntity? =
+            suggestions.value.find { it.contentHash == hash }
     }
 
     private class FakeTaskRepository : TaskRepository {

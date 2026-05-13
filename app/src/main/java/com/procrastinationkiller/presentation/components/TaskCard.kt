@@ -7,9 +7,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +33,8 @@ import java.util.Locale
 fun TaskCard(
     task: TaskEntity,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onComplete: (() -> Unit)? = null
 ) {
     val priority = try {
         TaskPriority.valueOf(task.priority)
@@ -51,6 +57,20 @@ fun TaskCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (onComplete != null) {
+                IconButton(
+                    onClick = onComplete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CheckCircle,
+                        contentDescription = "Complete task",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = task.title,

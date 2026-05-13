@@ -30,9 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,6 +51,15 @@ fun TaskDetailScreen(
     viewModel: TaskDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Handle calendar intent as a one-shot event
+    LaunchedEffect(uiState.calendarIntent) {
+        uiState.calendarIntent?.let { intent ->
+            context.startActivity(intent)
+            viewModel.clearCalendarIntent()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -113,7 +124,8 @@ fun TaskDetailScreen(
                 ViewMode(
                     task = task,
                     onComplete = { viewModel.completeTask() },
-                    onDelete = { viewModel.deleteTask() }
+                    onDelete = { viewModel.deleteTask() },
+                    onAddToCalendar = { viewModel.addToCalendar() }
                 )
             }
         }
@@ -124,7 +136,8 @@ fun TaskDetailScreen(
 private fun ViewMode(
     task: com.procrastinationkiller.data.local.entity.TaskEntity,
     onComplete: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onAddToCalendar: () -> Unit
 ) {
     val priority = try {
         TaskPriority.valueOf(task.priority)
@@ -195,6 +208,12 @@ private fun ViewMode(
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Complete")
+            }
+            OutlinedButton(
+                onClick = onAddToCalendar,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Add to Calendar")
             }
         }
         OutlinedButton(

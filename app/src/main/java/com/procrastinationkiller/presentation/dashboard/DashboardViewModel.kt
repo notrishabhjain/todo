@@ -3,6 +3,7 @@ package com.procrastinationkiller.presentation.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.procrastinationkiller.data.local.entity.TaskEntity
+import com.procrastinationkiller.domain.model.TaskStatus
 import com.procrastinationkiller.domain.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -92,5 +93,16 @@ class DashboardViewModel @Inject constructor(
         cal.set(Calendar.SECOND, 59)
         cal.set(Calendar.MILLISECOND, 999)
         return cal.timeInMillis
+    }
+
+    fun completeTask(taskId: Long) {
+        viewModelScope.launch {
+            val task = taskRepository.getTaskById(taskId) ?: return@launch
+            val updatedTask = task.copy(
+                status = TaskStatus.COMPLETED.name,
+                completedAt = System.currentTimeMillis()
+            )
+            taskRepository.updateTask(updatedTask)
+        }
     }
 }

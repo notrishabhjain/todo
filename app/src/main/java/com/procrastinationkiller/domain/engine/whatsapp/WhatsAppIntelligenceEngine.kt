@@ -70,8 +70,8 @@ class WhatsAppIntelligenceEngine @Inject constructor(
             else -> null
         }
 
-        // Auto-approve if contact has autoApprove enabled
-        val autoApprove = contact?.autoApprove == true
+        // Auto-approve for VIP contacts or if contact has autoApprove enabled
+        val autoApprove = contactPriority == ContactPriority.VIP || contact?.autoApprove == true
 
         return WhatsAppEvaluationResult.ProcessResult(
             whatsAppContext = whatsAppContext,
