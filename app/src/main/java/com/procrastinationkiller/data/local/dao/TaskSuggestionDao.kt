@@ -23,4 +23,7 @@ interface TaskSuggestionDao {
 
     @Query("DELETE FROM task_suggestions WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM task_suggestions WHERE contentHash = :hash LIMIT 1")
+    suspend fun findByContentHash(hash: String): TaskSuggestionEntity?
 }

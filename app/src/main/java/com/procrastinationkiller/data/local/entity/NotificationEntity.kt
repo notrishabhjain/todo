@@ -12,5 +12,6 @@ data class NotificationEntity(
     val content: String,
     val timestamp: Long = System.currentTimeMillis(),
     val isProcessed: Boolean = false,
-    val extractedTaskId: Long? = null
+    val extractedTaskId: Long? = null,
+    val notificationKey: String? = null
 )
