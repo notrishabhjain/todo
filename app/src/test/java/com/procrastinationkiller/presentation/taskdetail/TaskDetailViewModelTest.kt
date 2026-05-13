@@ -147,7 +147,7 @@ class TaskDetailViewModelTest {
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.task)
-        assertEquals("Task deleted", viewModel.uiState.value.message)
+        assertEquals("Task archived", viewModel.uiState.value.message)
     }
 
     private class FakeTaskRepository : TaskRepository {

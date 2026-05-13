@@ -111,6 +111,22 @@ fun TasksListScreen(
             }
 
             item {
+                val statusChips = listOf(
+                    FilterChipData(
+                        label = "Active",
+                        selected = !uiState.showCompleted,
+                        onClick = { viewModel.toggleShowCompleted(false) }
+                    ),
+                    FilterChipData(
+                        label = "Completed",
+                        selected = uiState.showCompleted,
+                        onClick = { viewModel.toggleShowCompleted(true) }
+                    )
+                )
+                FilterChipsRow(chips = statusChips)
+            }
+
+            item {
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
@@ -171,7 +187,8 @@ fun TasksListScreen(
                         content = {
                             TaskCard(
                                 task = task,
-                                onClick = { onTaskClick(task.id) }
+                                onClick = { onTaskClick(task.id) },
+                                onComplete = { viewModel.completeTask(task.id) }
                             )
                         }
                     )

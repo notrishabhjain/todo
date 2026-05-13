@@ -24,6 +24,7 @@ data class TasksListUiState(
     val isLoading: Boolean = true,
     val selectedPriority: TaskPriority? = null,
     val selectedStatus: TaskStatus? = null,
+    val showCompleted: Boolean = false,
     val sortOrder: TaskSortOrder = TaskSortOrder.CREATED_DESC,
     val showCreateDialog: Boolean = false,
     val snackbarMessage: String? = null
@@ -50,7 +51,7 @@ class TasksListViewModel @Inject constructor(
         collectJob = viewModelScope.launch {
             val filter = TaskFilter(
                 priority = _uiState.value.selectedPriority,
-                status = _uiState.value.selectedStatus
+                status = if (_uiState.value.showCompleted) TaskStatus.COMPLETED else _uiState.value.selectedStatus
             )
             getTasksUseCase(filter, _uiState.value.sortOrder).collect { tasks ->
                 _uiState.update { it.copy(tasks = tasks, isLoading = false) }
@@ -73,6 +74,11 @@ class TasksListViewModel @Inject constructor(
                 selectedStatus = if (it.selectedStatus == status) null else status
             )
         }
+        loadTasks()
+    }
+
+    fun toggleShowCompleted(showCompleted: Boolean) {
+        _uiState.update { it.copy(showCompleted = showCompleted) }
         loadTasks()
     }
 

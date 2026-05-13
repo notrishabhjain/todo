@@ -36,10 +36,12 @@ class GetTasksUseCase @Inject constructor(
         return taskRepository.getAllTasks().map { tasks ->
             var filtered = tasks
 
-            // Filter out ARCHIVED and DELETED tasks unless explicitly requested
+            // Filter out ARCHIVED, DELETED, and COMPLETED tasks unless explicitly requested
             if (filter.status == null) {
                 filtered = filtered.filter {
-                    it.status != TaskStatus.ARCHIVED.name && it.status != TaskStatus.DELETED.name
+                    it.status != TaskStatus.ARCHIVED.name &&
+                        it.status != TaskStatus.DELETED.name &&
+                        it.status != TaskStatus.COMPLETED.name
                 }
             }
 

@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -123,9 +122,14 @@ fun TaskDetailScreen(
             } else {
                 ViewMode(
                     task = task,
-                    onComplete = { viewModel.completeTask() },
-                    onDelete = { viewModel.deleteTask() },
-                    onArchive = { viewModel.archiveTask() },
+                    onComplete = {
+                        viewModel.completeTask()
+                        onNavigateBack()
+                    },
+                    onArchive = {
+                        viewModel.archiveTask()
+                        onNavigateBack()
+                    },
                     onAddToCalendar = { viewModel.addToCalendar() }
                 )
             }
@@ -137,7 +141,6 @@ fun TaskDetailScreen(
 private fun ViewMode(
     task: com.procrastinationkiller.data.local.entity.TaskEntity,
     onComplete: () -> Unit,
-    onDelete: () -> Unit,
     onArchive: () -> Unit,
     onAddToCalendar: () -> Unit
 ) {
@@ -262,15 +265,6 @@ private fun ViewMode(
             modifier = Modifier.weight(1f)
         ) {
             Text("Archive")
-        }
-        OutlinedButton(
-            onClick = onDelete,
-            modifier = Modifier.weight(1f),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            )
-        ) {
-            Text("Delete")
         }
     }
 }
