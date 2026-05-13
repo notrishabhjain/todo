@@ -30,8 +30,7 @@ class UpdateTaskUseCase @Inject constructor(
         taskRepository.updateTask(taskEntity)
     }
 
-    suspend fun deleteTask(taskId: Long) {
-        val task = taskRepository.getTaskById(taskId) ?: return
-        taskRepository.deleteTask(task)
+    suspend fun archiveTask(taskId: Long) {
+        updateStatus(taskId, TaskStatus.ARCHIVED)
     }
 }
