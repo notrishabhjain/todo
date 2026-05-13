@@ -2,6 +2,8 @@ package com.procrastinationkiller.domain.engine
 
 import com.procrastinationkiller.domain.engine.learning.LearningEngine
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
+import com.procrastinationkiller.domain.engine.prioritization.SmartPrioritizationEngine
+import com.procrastinationkiller.domain.engine.semantic.SemanticUnderstandingEngine
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import javax.inject.Inject
@@ -11,14 +13,29 @@ import javax.inject.Singleton
 class TaskExtractionEngine @Inject constructor(
     private val keywordEngine: KeywordEngine,
     private val classificationPipeline: HybridClassificationPipeline? = null,
-    private val learningEngine: LearningEngine? = null
+    private val learningEngine: LearningEngine? = null,
+    private val smartPrioritizationEngine: SmartPrioritizationEngine? = null,
+    private val semanticUnderstandingEngine: SemanticUnderstandingEngine? = null
 ) {
 
-    fun extract(
+    suspend fun extract(
         text: String,
         sourceApp: String = "",
         sender: String = ""
     ): TaskSuggestion? {
+        // Run semantic understanding FIRST to short-circuit on negation/questions
+        val semanticResult = semanticUnderstandingEngine?.analyze(text, sender, sourceApp)
+        if (semanticResult != null) {
+            // If negation detected with high confidence, return null
+            if (semanticResult.negationDetected && semanticResult.semanticConfidence > 0.7f) {
+                return null
+            }
+            // If question and NOT a polite request, return null
+            if (semanticResult.isQuestion && !semanticResult.isActionable) {
+                return null
+            }
+        }
+
         val analysis = keywordEngine.analyze(text)
 
         // Use hybrid pipeline if available
@@ -34,6 +51,12 @@ class TaskExtractionEngine @Inject constructor(
         var priority = hybridResult?.finalPriority ?: determinePriority(analysis)
         var confidence = hybridResult?.confidence ?: calculateConfidence(analysis)
 
+        // Apply semantic confidence as boost/penalty
+        if (semanticResult != null) {
+            val semanticBoost = (semanticResult.semanticConfidence - 0.5f) * 0.2f
+            confidence = (confidence + semanticBoost).coerceIn(0f, 1f)
+        }
+
         // Apply learning adjustments if available
         val learningAdjustment = learningEngine?.getAdaptedAnalysis(text, sender, sourceApp)
         if (learningAdjustment != null) {
@@ -45,11 +68,28 @@ class TaskExtractionEngine @Inject constructor(
             }
         }
 
+        // Apply smart prioritization if available
+        if (smartPrioritizationEngine != null) {
+            val prioritizationResult = smartPrioritizationEngine.evaluate(
+                text = text,
+                sender = sender,
+                sourceApp = sourceApp,
+                currentPriority = priority,
+                deadlineMs = analysis.resolvedDueDate
+            )
+            if (prioritizationResult.shouldEscalate) {
+                priority = prioritizationResult.priority
+            }
+        }
+
+        // Use implicit deadline from semantic analysis if keyword engine didn't resolve one
+        val dueDate = analysis.resolvedDueDate ?: semanticResult?.implicitDeadline?.resolvedTimestamp
+
         return TaskSuggestion(
             suggestedTitle = title,
             description = text,
             priority = priority,
-            dueDate = analysis.resolvedDueDate,
+            dueDate = dueDate,
             sourceApp = sourceApp,
             sender = sender,
             originalText = text,

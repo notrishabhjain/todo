@@ -7,11 +7,13 @@ import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
 import com.procrastinationkiller.data.parser.NotificationParser
 import com.procrastinationkiller.data.parser.WhatsAppHandler
 import com.procrastinationkiller.domain.engine.TaskExtractionEngine
+import com.procrastinationkiller.domain.engine.semantic.SemanticDeduplicator
 import com.procrastinationkiller.domain.engine.whatsapp.WhatsAppEvaluationResult
 import com.procrastinationkiller.domain.engine.whatsapp.WhatsAppIntelligenceEngine
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import com.procrastinationkiller.domain.repository.NotificationRepository
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,7 +24,8 @@ class TaskExtractionUseCase @Inject constructor(
     private val taskExtractionEngine: TaskExtractionEngine,
     private val notificationRepository: NotificationRepository,
     private val taskSuggestionDao: TaskSuggestionDao,
-    private val whatsAppIntelligenceEngine: WhatsAppIntelligenceEngine? = null
+    private val whatsAppIntelligenceEngine: WhatsAppIntelligenceEngine? = null,
+    private val semanticDeduplicator: SemanticDeduplicator? = null
 ) {
 
     suspend fun processNotification(sbn: StatusBarNotification): TaskSuggestion? {
@@ -91,7 +94,7 @@ class TaskExtractionUseCase @Inject constructor(
         // Apply WhatsApp intelligence enhancements
         if (suggestion != null && whatsAppEvalResult != null) {
             val override = whatsAppEvalResult.priorityOverride
-            val priority = if (override != null && override.ordinal < suggestion.priority.ordinal) {
+            val priority = if (override != null && override.ordinal > suggestion.priority.ordinal) {
                 override
             } else {
                 suggestion.priority
@@ -118,7 +121,42 @@ class TaskExtractionUseCase @Inject constructor(
                 confidence = suggestion.confidence,
                 autoApprove = suggestion.autoApprove
             )
-            taskSuggestionDao.insert(entity)
+
+            // Check for duplicates using semantic deduplication
+            if (semanticDeduplicator != null) {
+                // Note: Queries all pending suggestions on every notification. This is acceptable
+                // at current scale (typical users have <100 pending suggestions). If this grows
+                // significantly, consider adding a limit or indexing by sender.
+                val pendingSuggestions = taskSuggestionDao.getByStatus("PENDING").first()
+                val deduplicationResult = semanticDeduplicator.checkDuplicate(
+                    newText = suggestion.originalText,
+                    newSender = suggestion.sender,
+                    existingSuggestions = pendingSuggestions
+                )
+
+                if (deduplicationResult.isDuplicate && deduplicationResult.existingTaskId != null) {
+                    // If new message has higher priority, update existing
+                    val existingEntity = pendingSuggestions.find { it.id == deduplicationResult.existingTaskId }
+                    if (existingEntity != null) {
+                        val existingPriority = try {
+                            TaskPriority.valueOf(existingEntity.priority)
+                        } catch (_: IllegalArgumentException) {
+                            TaskPriority.MEDIUM
+                        }
+                        if (suggestion.priority.ordinal > existingPriority.ordinal) {
+                            // Higher priority (higher ordinal) - update existing
+                            taskSuggestionDao.insert(
+                                existingEntity.copy(priority = suggestion.priority.name)
+                            )
+                        }
+                    }
+                    // Skip insertion for duplicate
+                } else {
+                    taskSuggestionDao.insert(entity)
+                }
+            } else {
+                taskSuggestionDao.insert(entity)
+            }
         }
 
         // Mark notification as processed

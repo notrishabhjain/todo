@@ -3,11 +3,14 @@ package com.procrastinationkiller.di
 import android.content.Context
 import androidx.room.Room
 import com.procrastinationkiller.data.local.AppDatabase
+import com.procrastinationkiller.data.local.dao.AchievementDao
 import com.procrastinationkiller.data.local.dao.AnalyticsDao
+import com.procrastinationkiller.data.local.dao.BehaviorPatternDao
 import com.procrastinationkiller.data.local.dao.ContactDao
 import com.procrastinationkiller.data.local.dao.KeywordDao
 import com.procrastinationkiller.data.local.dao.LearningDataDao
 import com.procrastinationkiller.data.local.dao.NotificationDao
+import com.procrastinationkiller.data.local.dao.ProductivityScoreDao
 import com.procrastinationkiller.data.local.dao.TaskDao
 import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import dagger.Module
@@ -55,4 +58,13 @@ object DatabaseModule {
 
     @Provides
     fun provideTaskSuggestionDao(database: AppDatabase): TaskSuggestionDao = database.taskSuggestionDao()
+
+    @Provides
+    fun provideBehaviorPatternDao(database: AppDatabase): BehaviorPatternDao = database.behaviorPatternDao()
+
+    @Provides
+    fun provideProductivityScoreDao(database: AppDatabase): ProductivityScoreDao = database.productivityScoreDao()
+
+    @Provides
+    fun provideAchievementDao(database: AppDatabase): AchievementDao = database.achievementDao()
 }

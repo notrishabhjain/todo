@@ -4,6 +4,7 @@ import com.procrastinationkiller.data.local.dao.LearningDataDao
 import com.procrastinationkiller.data.local.entity.LearningDataEntity
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.logging.Logger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,6 +14,7 @@ class AdaptiveWeightManager @Inject constructor(
 ) {
 
     companion object {
+        private val logger = Logger.getLogger(AdaptiveWeightManager::class.java.simpleName)
         private const val DEFAULT_WEIGHT = 1.0f
         private const val DEFAULT_CONFIDENCE_THRESHOLD = 0.5f
         private const val EMA_ALPHA = 0.3f
@@ -36,22 +38,34 @@ class AdaptiveWeightManager @Inject constructor(
     fun isLoadingComplete(): Boolean = loadingComplete.get()
 
     fun getKeywordBoost(keyword: String): Float {
-        if (!loadingComplete.get()) return DEFAULT_WEIGHT
+        if (!loadingComplete.get()) {
+            logger.fine("Serving default keyword boost for '$keyword' - database load incomplete")
+            return DEFAULT_WEIGHT
+        }
         return keywordWeights[keyword.lowercase()] ?: DEFAULT_WEIGHT
     }
 
     fun getSenderImportance(sender: String): Float {
-        if (!loadingComplete.get()) return DEFAULT_WEIGHT
+        if (!loadingComplete.get()) {
+            logger.fine("Serving default sender importance for '$sender' - database load incomplete")
+            return DEFAULT_WEIGHT
+        }
         return senderImportance[sender.lowercase()] ?: DEFAULT_WEIGHT
     }
 
     fun getAppReliability(app: String): Float {
-        if (!loadingComplete.get()) return DEFAULT_WEIGHT
+        if (!loadingComplete.get()) {
+            logger.fine("Serving default app reliability for '$app' - database load incomplete")
+            return DEFAULT_WEIGHT
+        }
         return appReliability[app.lowercase()] ?: DEFAULT_WEIGHT
     }
 
     fun getConfidenceThreshold(): Float {
-        if (!loadingComplete.get()) return DEFAULT_CONFIDENCE_THRESHOLD
+        if (!loadingComplete.get()) {
+            logger.fine("Serving default confidence threshold - database load incomplete")
+            return DEFAULT_CONFIDENCE_THRESHOLD
+        }
         return confidenceThreshold
     }
 
