@@ -25,6 +25,7 @@ data class TasksListUiState(
     val selectedPriority: TaskPriority? = null,
     val selectedStatus: TaskStatus? = null,
     val showCompleted: Boolean = false,
+    val showArchived: Boolean = false,
     val sortOrder: TaskSortOrder = TaskSortOrder.CREATED_DESC,
     val showCreateDialog: Boolean = false,
     val snackbarMessage: String? = null
@@ -49,9 +50,14 @@ class TasksListViewModel @Inject constructor(
     private fun loadTasks() {
         collectJob?.cancel()
         collectJob = viewModelScope.launch {
+            val statusFilter = when {
+                _uiState.value.showArchived -> TaskStatus.ARCHIVED
+                _uiState.value.showCompleted -> TaskStatus.COMPLETED
+                else -> _uiState.value.selectedStatus
+            }
             val filter = TaskFilter(
                 priority = _uiState.value.selectedPriority,
-                status = if (_uiState.value.showCompleted) TaskStatus.COMPLETED else _uiState.value.selectedStatus
+                status = statusFilter
             )
             getTasksUseCase(filter, _uiState.value.sortOrder).collect { tasks ->
                 _uiState.update { it.copy(tasks = tasks, isLoading = false) }
@@ -78,7 +84,12 @@ class TasksListViewModel @Inject constructor(
     }
 
     fun toggleShowCompleted(showCompleted: Boolean) {
-        _uiState.update { it.copy(showCompleted = showCompleted) }
+        _uiState.update { it.copy(showCompleted = showCompleted, showArchived = false) }
+        loadTasks()
+    }
+
+    fun toggleShowArchived(showArchived: Boolean) {
+        _uiState.update { it.copy(showArchived = showArchived, showCompleted = false) }
         loadTasks()
     }
 

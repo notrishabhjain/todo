@@ -26,7 +26,8 @@ data class TaskDetailUiState(
     val editDescription: String = "",
     val editPriority: TaskPriority = TaskPriority.MEDIUM,
     val message: String? = null,
-    val calendarIntent: Intent? = null
+    val calendarIntent: Intent? = null,
+    val shouldNavigateBack: Boolean = false
 )
 
 @HiltViewModel
@@ -118,21 +119,21 @@ class TaskDetailViewModel @Inject constructor(
         viewModelScope.launch {
             updateTaskUseCase.updateStatus(taskId, TaskStatus.COMPLETED)
             loadTask()
-            _uiState.update { it.copy(message = "Task completed") }
+            _uiState.update { it.copy(message = "Task completed", shouldNavigateBack = true) }
         }
     }
 
     fun deleteTask() {
         viewModelScope.launch {
             updateTaskUseCase.updateStatus(taskId, TaskStatus.ARCHIVED)
-            _uiState.update { it.copy(message = "Task archived", task = null) }
+            _uiState.update { it.copy(message = "Task archived", shouldNavigateBack = true) }
         }
     }
 
     fun archiveTask() {
         viewModelScope.launch {
             updateTaskUseCase.updateStatus(taskId, TaskStatus.ARCHIVED)
-            _uiState.update { it.copy(message = "Task archived", task = null) }
+            _uiState.update { it.copy(message = "Task archived", shouldNavigateBack = true) }
         }
     }
 

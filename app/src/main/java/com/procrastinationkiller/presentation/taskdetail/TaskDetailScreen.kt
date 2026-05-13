@@ -52,6 +52,13 @@ fun TaskDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    // Navigate back when archive/delete completes
+    LaunchedEffect(uiState.shouldNavigateBack) {
+        if (uiState.shouldNavigateBack) {
+            onNavigateBack()
+        }
+    }
+
     // Handle calendar intent as a one-shot event
     LaunchedEffect(uiState.calendarIntent) {
         uiState.calendarIntent?.let { intent ->
@@ -124,11 +131,9 @@ fun TaskDetailScreen(
                     task = task,
                     onComplete = {
                         viewModel.completeTask()
-                        onNavigateBack()
                     },
                     onArchive = {
                         viewModel.archiveTask()
-                        onNavigateBack()
                     },
                     onAddToCalendar = { viewModel.addToCalendar() }
                 )
