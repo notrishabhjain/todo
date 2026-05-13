@@ -1,6 +1,7 @@
 package com.procrastinationkiller.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,6 +12,7 @@ import com.procrastinationkiller.presentation.dashboard.DashboardScreen
 import com.procrastinationkiller.presentation.inbox.InboxScreen
 import com.procrastinationkiller.presentation.insights.InsightsScreen
 import com.procrastinationkiller.presentation.onboarding.OnboardingScreen
+import com.procrastinationkiller.presentation.onboarding.OnboardingViewModel
 import com.procrastinationkiller.presentation.settings.ExportImportScreen
 import com.procrastinationkiller.presentation.settings.KeywordManagementScreen
 import com.procrastinationkiller.presentation.settings.SettingsScreen
@@ -35,16 +37,23 @@ object Routes {
 }
 
 @Composable
-fun NavGraph(navController: NavHostController) {
+fun NavGraph(
+    navController: NavHostController,
+    startDestination: String = Routes.DASHBOARD,
+    isNotificationListenerEnabled: Boolean = true,
+    onOpenNotificationSettings: () -> Unit = {}
+) {
     NavHost(
         navController = navController,
-        startDestination = Routes.DASHBOARD
+        startDestination = startDestination
     ) {
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onTaskClick = { taskId ->
                     navController.navigate(Routes.taskDetail(taskId))
-                }
+                },
+                isNotificationListenerEnabled = isNotificationListenerEnabled,
+                onOpenNotificationSettings = onOpenNotificationSettings
             )
         }
         composable(Routes.INBOX) {
@@ -79,6 +88,7 @@ fun NavGraph(navController: NavHostController) {
         }
         composable(Routes.ONBOARDING) {
             val context = androidx.compose.ui.platform.LocalContext.current
+            val onboardingViewModel = hiltViewModel<OnboardingViewModel>()
             OnboardingScreen(
                 onRequestNotificationAccess = {
                     val intent = android.content.Intent(
@@ -98,6 +108,7 @@ fun NavGraph(navController: NavHostController) {
                     navController.navigate(Routes.SETTINGS)
                 },
                 onComplete = {
+                    onboardingViewModel.completeOnboarding()
                     navController.navigate(Routes.DASHBOARD) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                     }
