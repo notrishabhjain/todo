@@ -15,6 +15,7 @@ import com.procrastinationkiller.presentation.onboarding.OnboardingScreen
 import com.procrastinationkiller.presentation.onboarding.OnboardingViewModel
 import com.procrastinationkiller.presentation.settings.ExportImportScreen
 import com.procrastinationkiller.presentation.settings.KeywordManagementScreen
+import com.procrastinationkiller.presentation.settings.MonitoredAppsScreen
 import com.procrastinationkiller.presentation.settings.SettingsScreen
 import com.procrastinationkiller.presentation.taskdetail.TaskDetailScreen
 import com.procrastinationkiller.presentation.tasks.TasksListScreen
@@ -32,6 +33,7 @@ object Routes {
     const val MEETING_TRANSCRIPT = "meeting_transcript"
     const val EXPORT_IMPORT = "export_import"
     const val INSIGHTS = "insights"
+    const val MONITORED_APPS = "monitored_apps"
 
     fun taskDetail(taskId: Long): String = "task_detail/$taskId"
 }
@@ -100,6 +102,9 @@ fun NavGraph(
                 },
                 onNavigateToTranscript = {
                     navController.navigate(Routes.MEETING_TRANSCRIPT)
+                },
+                onNavigateToMonitoredApps = {
+                    navController.navigate(Routes.MONITORED_APPS)
                 }
             )
         }
@@ -120,11 +125,7 @@ fun NavGraph(
                     context.startActivity(intent)
                 },
                 onSelectApps = {
-                    val intent = android.content.Intent(
-                        android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS
-                    )
-                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
+                    navController.navigate(Routes.MONITORED_APPS)
                 },
                 onChooseAggressiveness = {
                     navController.navigate(Routes.SETTINGS)
@@ -157,6 +158,11 @@ fun NavGraph(
         }
         composable(Routes.INSIGHTS) {
             InsightsScreen()
+        }
+        composable(Routes.MONITORED_APPS) {
+            MonitoredAppsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }
