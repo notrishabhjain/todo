@@ -23,6 +23,7 @@ enum class AppType {
     SLACK,
     SMS,
     CALENDAR,
+    PHONE_DIALER,
     OTHER
 }
 
@@ -64,6 +65,7 @@ class NotificationParser @Inject constructor() {
             lower.contains("slack") -> AppType.SLACK
             lower.contains("messaging") || lower.contains("sms") -> AppType.SMS
             lower.contains("calendar") -> AppType.CALENDAR
+            lower.contains("dialer") || lower.contains("incallui") || lower == "com.android.phone" -> AppType.PHONE_DIALER
             else -> AppType.OTHER
         }
     }

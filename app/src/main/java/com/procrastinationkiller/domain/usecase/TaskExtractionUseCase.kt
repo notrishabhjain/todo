@@ -4,7 +4,9 @@ import android.service.notification.StatusBarNotification
 import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.data.local.entity.NotificationEntity
 import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
+import com.procrastinationkiller.data.parser.AppType
 import com.procrastinationkiller.data.parser.NotificationParser
+import com.procrastinationkiller.data.parser.PhoneCallHandler
 import com.procrastinationkiller.data.parser.WhatsAppHandler
 import com.procrastinationkiller.domain.engine.TaskExtractionEngine
 import com.procrastinationkiller.domain.engine.semantic.SemanticDeduplicator
@@ -22,6 +24,7 @@ import javax.inject.Singleton
 class TaskExtractionUseCase @Inject constructor(
     private val notificationParser: NotificationParser,
     private val whatsAppHandler: WhatsAppHandler,
+    private val phoneCallHandler: PhoneCallHandler,
     private val taskExtractionEngine: TaskExtractionEngine,
     private val notificationRepository: NotificationRepository,
     private val taskSuggestionDao: TaskSuggestionDao,
@@ -37,6 +40,68 @@ class TaskExtractionUseCase @Inject constructor(
         val notificationKey = computeNotificationKey(parsed.packageName, parsed.title, parsed.text)
         val alreadyProcessedCount = notificationRepository.countProcessedByKey(notificationKey)
         if (alreadyProcessedCount > 0) {
+            return null
+        }
+
+        // Handle missed call notifications from phone dialer
+        if (parsed.appType == AppType.PHONE_DIALER) {
+            val missedCall = phoneCallHandler.detectMissedCallFromParsed(
+                packageName = parsed.packageName,
+                title = parsed.title,
+                text = parsed.text,
+                category = null,
+                timestamp = parsed.timestamp
+            )
+            if (missedCall != null) {
+                val taskTitle = phoneCallHandler.generateTaskTitle(missedCall.callerName)
+                val suggestion = TaskSuggestion(
+                    suggestedTitle = taskTitle,
+                    description = "Missed call from ${missedCall.callerName}",
+                    priority = TaskPriority.HIGH,
+                    dueDate = null,
+                    sourceApp = parsed.packageName,
+                    sender = missedCall.callerName,
+                    originalText = "${parsed.title} ${parsed.text}".trim(),
+                    confidence = 0.9f,
+                    autoApprove = false
+                )
+
+                // Check for duplicates using content hash
+                val contentHash = computeContentHash(suggestion.sender, suggestion.originalText, suggestion.sourceApp)
+                val existingByHash = taskSuggestionDao.findByContentHash(contentHash)
+                if (existingByHash != null) {
+                    return null
+                }
+
+                // Store notification
+                val notificationEntity = NotificationEntity(
+                    packageName = parsed.packageName,
+                    title = parsed.title,
+                    content = parsed.text,
+                    timestamp = parsed.timestamp,
+                    isProcessed = true,
+                    notificationKey = notificationKey
+                )
+                notificationRepository.insertNotification(notificationEntity)
+
+                // Persist suggestion
+                val entity = TaskSuggestionEntity(
+                    suggestedTitle = suggestion.suggestedTitle,
+                    description = suggestion.description,
+                    priority = suggestion.priority.name,
+                    dueDate = suggestion.dueDate,
+                    sourceApp = suggestion.sourceApp,
+                    sender = suggestion.sender,
+                    originalText = suggestion.originalText,
+                    confidence = suggestion.confidence,
+                    autoApprove = suggestion.autoApprove,
+                    contentHash = contentHash
+                )
+                taskSuggestionDao.insert(entity)
+
+                return suggestion
+            }
+            // Not a missed call - skip non-missed-call dialer notifications
             return null
         }
 
