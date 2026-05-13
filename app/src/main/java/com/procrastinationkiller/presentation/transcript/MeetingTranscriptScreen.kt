@@ -82,6 +82,17 @@ fun MeetingTranscriptScreen(
             }
         }
 
+        if (uiState.errorMessage != null) {
+            item {
+                Text(
+                    text = uiState.errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
         if (uiState.isAnalyzed) {
             item {
                 Row(

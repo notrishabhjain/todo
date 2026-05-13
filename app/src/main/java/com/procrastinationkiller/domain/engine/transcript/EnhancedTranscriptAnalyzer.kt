@@ -16,65 +16,69 @@ class EnhancedTranscriptAnalyzer(
     fun analyze(transcript: String): List<TranscriptActionItem> {
         if (transcript.isBlank()) return emptyList()
 
-        val speakerProfiles = speakerRoleDetector.detectRoles(transcript)
-        val contextBuilder = ConversationContextBuilder()
-        val context = contextBuilder.build(transcript)
+        return try {
+            val speakerProfiles = speakerRoleDetector.detectRoles(transcript)
+            val contextBuilder = ConversationContextBuilder()
+            val context = contextBuilder.build(transcript)
 
-        val segments = splitIntoSegments(transcript)
-        val sectionTopics = detectSectionTopics(transcript)
-        val rawItems = mutableListOf<TranscriptActionItem>()
-        var currentSectionTopic: String? = null
+            val segments = splitIntoSegments(transcript)
+            val sectionTopics = detectSectionTopics(transcript)
+            val rawItems = mutableListOf<TranscriptActionItem>()
+            var currentSectionTopic: String? = null
 
-        for (segment in segments) {
-            // Update section topic if the segment text matches a detected section header
-            val sectionMatch = sectionTopics.find { it.second == segment.text }
-            if (sectionMatch != null) {
-                currentSectionTopic = sectionMatch.first
-                continue
-            }
+            for (segment in segments) {
+                // Update section topic if the segment text matches a detected section header
+                val sectionMatch = sectionTopics.find { it.second == segment.text }
+                if (sectionMatch != null) {
+                    currentSectionTopic = sectionMatch.first
+                    continue
+                }
 
-            val keywordAnalysis = keywordEngine.analyze(segment.text)
+                val keywordAnalysis = keywordEngine.analyze(segment.text)
 
-            // If the segment contains Devanagari, also check Devanagari keywords
-            val isDevanagariText = containsDevanagari(segment.text)
+                // If the segment contains Devanagari, also check Devanagari keywords
+                val isDevanagariText = containsDevanagari(segment.text)
 
-            val isActionable: Boolean
-            val mlConfidence: Float?
+                val isActionable: Boolean
+                val mlConfidence: Float?
 
-            if (pipeline != null) {
-                val hybridResult = pipeline.classify(segment.text, keywordAnalysis)
-                isActionable = hybridResult.isActionable
-                mlConfidence = hybridResult.confidence
-            } else {
-                // For Devanagari text, the keyword engine already checks Devanagari keywords
-                isActionable = keywordAnalysis.isActionable || (isDevanagariText && keywordAnalysis.actionKeywords.isNotEmpty())
-                mlConfidence = null
-            }
+                if (pipeline != null) {
+                    val hybridResult = pipeline.classify(segment.text, keywordAnalysis)
+                    isActionable = hybridResult.isActionable
+                    mlConfidence = hybridResult.confidence
+                } else {
+                    // For Devanagari text, the keyword engine already checks Devanagari keywords
+                    isActionable = keywordAnalysis.isActionable || (isDevanagariText && keywordAnalysis.actionKeywords.isNotEmpty())
+                    mlConfidence = null
+                }
 
-            if (isActionable) {
-                val owner = detectOwner(segment)
-                val speakerRole = findSpeakerRole(segment.speaker, owner, speakerProfiles)
-                val priority = determinePriority(keywordAnalysis, context, speakerRole)
-                val confidence = calculateConfidence(keywordAnalysis, speakerRole, mlConfidence)
-                val topic = currentSectionTopic ?: context.currentTopic
+                if (isActionable) {
+                    val owner = detectOwner(segment)
+                    val speakerRole = findSpeakerRole(segment.speaker, owner, speakerProfiles)
+                    val priority = determinePriority(keywordAnalysis, context, speakerRole)
+                    val confidence = calculateConfidence(keywordAnalysis, speakerRole, mlConfidence)
+                    val topic = currentSectionTopic ?: context.currentTopic
 
-                rawItems.add(
-                    TranscriptActionItem(
-                        text = segment.text.trim(),
-                        owner = owner,
-                        priority = priority,
-                        dueDate = keywordAnalysis.resolvedDueDate,
-                        confidence = confidence,
-                        speakerRole = speakerRole?.name,
-                        meetingType = context.meetingType.name,
-                        contextTopic = topic,
-                        mlConfidence = mlConfidence
+                    rawItems.add(
+                        TranscriptActionItem(
+                            text = segment.text.trim(),
+                            owner = owner,
+                            priority = priority,
+                            dueDate = keywordAnalysis.resolvedDueDate,
+                            confidence = confidence,
+                            speakerRole = speakerRole?.name,
+                            meetingType = context.meetingType.name,
+                            contextTopic = topic,
+                            mlConfidence = mlConfidence
+                        )
                     )
-                )
+                }
             }
-        }
 
-        return deduplicateItems(rawItems)
+            deduplicateItems(rawItems)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     /**
@@ -278,6 +282,6 @@ class EnhancedTranscriptAnalyzer(
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")
-        private val HINDI_ASSIGNMENT_PATTERN = Regex("(\\w{2,})\\s+(?:ko|se|please|ko bol do|se karwao|ko bolo|se kaho|ko assign karo)\\s+")
+        private val HINDI_ASSIGNMENT_PATTERN = Regex("([\\w\\u0900-\\u097F]{2,})\\s+(?:ko|se|please|ko bol do|se karwao|ko bolo|se kaho|ko assign karo)\\s+")
     }
 }

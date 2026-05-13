@@ -25,7 +25,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,6 +47,11 @@ fun InboxScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val hapticFeedback = LocalHapticFeedback.current
+    var dismissedSuggestionIds by remember { mutableStateOf(setOf<Long>()) }
+
+    LaunchedEffect(uiState.suggestions) {
+        dismissedSuggestionIds = emptySet()
+    }
 
     LaunchedEffect(uiState.snackbarMessage) {
         uiState.snackbarMessage?.let { message ->
@@ -80,17 +87,20 @@ fun InboxScreen(
                     )
                 }
             } else {
-                items(uiState.suggestions, key = { it.id }) { suggestion ->
+                val displayedSuggestions = uiState.suggestions.filter { it.id !in dismissedSuggestionIds }
+                items(displayedSuggestions, key = { it.id }) { suggestion ->
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { value ->
                             when (value) {
                                 SwipeToDismissBoxValue.StartToEnd -> {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    dismissedSuggestionIds = dismissedSuggestionIds + suggestion.id
                                     viewModel.approveSuggestion(suggestion)
                                     true
                                 }
                                 SwipeToDismissBoxValue.EndToStart -> {
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    dismissedSuggestionIds = dismissedSuggestionIds + suggestion.id
                                     viewModel.rejectSuggestion(suggestion)
                                     true
                                 }
