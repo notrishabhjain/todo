@@ -50,11 +50,6 @@ class ReminderScheduler @Inject constructor() {
     }
 
     fun isPersistentNotificationRequired(mode: ReminderMode): Boolean {
-        return when (mode) {
-            ReminderMode.NUCLEAR -> true
-            ReminderMode.AGGRESSIVE -> true
-            ReminderMode.NORMAL -> false
-            ReminderMode.GENTLE -> false
-        }
+        return true
     }
 }

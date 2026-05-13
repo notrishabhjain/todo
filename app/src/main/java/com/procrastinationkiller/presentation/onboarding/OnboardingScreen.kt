@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -48,6 +49,7 @@ fun OnboardingScreen(
     onRequestNotificationAccess: () -> Unit = {},
     onSelectApps: () -> Unit = {},
     onChooseAggressiveness: () -> Unit = {},
+    onRequestBatteryOptimization: () -> Unit = {},
     onComplete: () -> Unit = {}
 ) {
     val pages = listOf(
@@ -68,6 +70,12 @@ fun OnboardingScreen(
             description = "How aggressive should we be about reminding you? From gentle nudges to relentless accountability - pick what works for you.",
             icon = Icons.Default.Speed,
             actionLabel = "Choose Mode"
+        ),
+        OnboardingPage(
+            title = "Battery Optimization",
+            description = "To ensure reliable reminders, please disable battery optimization for this app. This prevents the system from killing our background service.",
+            icon = Icons.Default.BatteryAlert,
+            actionLabel = "Disable Optimization"
         ),
         OnboardingPage(
             title = "All Set!",
@@ -155,7 +163,8 @@ fun OnboardingScreen(
                         0 -> onRequestNotificationAccess()
                         1 -> onSelectApps()
                         2 -> onChooseAggressiveness()
-                        3 -> onComplete()
+                        3 -> onRequestBatteryOptimization()
+                        4 -> onComplete()
                     }
                     if (pagerState.currentPage < pages.size - 1) {
                         coroutineScope.launch {

@@ -41,7 +41,9 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String = Routes.DASHBOARD,
     isNotificationListenerEnabled: Boolean = true,
-    onOpenNotificationSettings: () -> Unit = {}
+    isPostNotificationsGranted: Boolean = true,
+    onOpenNotificationSettings: () -> Unit = {},
+    onRequestPostNotifications: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -53,7 +55,9 @@ fun NavGraph(
                     navController.navigate(Routes.taskDetail(taskId))
                 },
                 isNotificationListenerEnabled = isNotificationListenerEnabled,
+                isPostNotificationsGranted = isPostNotificationsGranted,
                 onOpenNotificationSettings = onOpenNotificationSettings,
+                onRequestPostNotifications = onRequestPostNotifications,
                 onNavigateToTranscript = {
                     navController.navigate(Routes.MEETING_TRANSCRIPT)
                 },
@@ -124,6 +128,15 @@ fun NavGraph(
                 },
                 onChooseAggressiveness = {
                     navController.navigate(Routes.SETTINGS)
+                },
+                onRequestBatteryOptimization = {
+                    val intent = android.content.Intent(
+                        android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                    ).apply {
+                        data = android.net.Uri.parse("package:${context.packageName}")
+                    }
+                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
                 },
                 onComplete = {
                     onboardingViewModel.completeOnboarding()

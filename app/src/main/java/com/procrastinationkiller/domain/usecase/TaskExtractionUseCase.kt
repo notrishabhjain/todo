@@ -1,6 +1,11 @@
 package com.procrastinationkiller.domain.usecase
 
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.service.notification.StatusBarNotification
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.procrastinationkiller.data.local.dao.TaskSuggestionDao
 import com.procrastinationkiller.data.local.entity.NotificationEntity
 import com.procrastinationkiller.data.local.entity.TaskSuggestionEntity
@@ -15,6 +20,9 @@ import com.procrastinationkiller.domain.engine.whatsapp.WhatsAppIntelligenceEngi
 import com.procrastinationkiller.domain.model.TaskPriority
 import com.procrastinationkiller.domain.model.TaskSuggestion
 import com.procrastinationkiller.domain.repository.NotificationRepository
+import com.procrastinationkiller.presentation.MainActivity
+import com.procrastinationkiller.service.NotificationChannelManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -27,11 +35,54 @@ class TaskExtractionUseCase @Inject constructor(
     private val taskExtractionEngine: TaskExtractionEngine,
     private val notificationRepository: NotificationRepository,
     private val taskSuggestionDao: TaskSuggestionDao,
+    @ApplicationContext private val context: Context,
     private val whatsAppIntelligenceEngine: WhatsAppIntelligenceEngine? = null,
     private val semanticDeduplicator: SemanticDeduplicator? = null,
     private val approveTaskUseCase: ApproveTaskUseCase? = null,
     private val notificationDao: com.procrastinationkiller.data.local.dao.NotificationDao? = null
 ) {
+
+    companion object {
+        private const val SUGGESTION_NOTIFICATION_ID_BASE = 3000
+
+        fun computeContentHash(sender: String, originalText: String, sourceApp: String): String {
+            val input = "$sender|$originalText|$sourceApp"
+            val digest = MessageDigest.getInstance("SHA-256")
+            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
+            return hashBytes.joinToString("") { "%02x".format(it) }
+        }
+
+        fun computeNotificationKey(packageName: String, title: String, content: String): String {
+            val input = "$packageName|$title|$content"
+            val digest = MessageDigest.getInstance("SHA-256")
+            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
+            return hashBytes.joinToString("") { "%02x".format(it) }
+        }
+    }
+
+    private fun postSuggestionNotification(title: String) {
+        val intent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notificationId = SUGGESTION_NOTIFICATION_ID_BASE + (System.currentTimeMillis() % 1000).toInt()
+        val notification = NotificationCompat.Builder(context, NotificationChannelManager.CHANNEL_SUGGESTIONS)
+            .setContentTitle("New Task Suggestion")
+            .setContentText(title)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+        } catch (_: SecurityException) {
+            // Notification permission not granted
+        }
+    }
 
     suspend fun processNotification(sbn: StatusBarNotification, sbnKey: String? = null): TaskSuggestion? {
         val parsed = notificationParser.parse(sbn)
@@ -108,6 +159,7 @@ class TaskExtractionUseCase @Inject constructor(
                     contentHash = contentHash
                 )
                 taskSuggestionDao.insert(entity)
+                postSuggestionNotification(suggestion.suggestedTitle)
 
                 return suggestion
             }
@@ -295,6 +347,7 @@ class TaskExtractionUseCase @Inject constructor(
                 approveTaskUseCase.invoke(suggestion)
             } else {
                 taskSuggestionDao.insert(entity)
+                postSuggestionNotification(suggestion.suggestedTitle)
             }
         }
 
@@ -377,24 +430,9 @@ class TaskExtractionUseCase @Inject constructor(
             approveTaskUseCase.invoke(suggestion)
         } else {
             taskSuggestionDao.insert(entity)
+            postSuggestionNotification(suggestion.suggestedTitle)
         }
 
         return suggestion
-    }
-
-    companion object {
-        fun computeContentHash(sender: String, originalText: String, sourceApp: String): String {
-            val input = "$sender|$originalText|$sourceApp"
-            val digest = MessageDigest.getInstance("SHA-256")
-            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
-            return hashBytes.joinToString("") { "%02x".format(it) }
-        }
-
-        fun computeNotificationKey(packageName: String, title: String, content: String): String {
-            val input = "$packageName|$title|$content"
-            val digest = MessageDigest.getInstance("SHA-256")
-            val hashBytes = digest.digest(input.toByteArray(Charsets.UTF_8))
-            return hashBytes.joinToString("") { "%02x".format(it) }
-        }
     }
 }

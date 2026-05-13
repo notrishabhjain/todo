@@ -132,12 +132,12 @@ class ReminderSchedulerTest {
     }
 
     @Test
-    fun `persistent notification not required for normal`() {
-        assertFalse(scheduler.isPersistentNotificationRequired(ReminderMode.NORMAL))
+    fun `persistent notification required for normal`() {
+        assertTrue(scheduler.isPersistentNotificationRequired(ReminderMode.NORMAL))
     }
 
     @Test
-    fun `persistent notification not required for gentle`() {
-        assertFalse(scheduler.isPersistentNotificationRequired(ReminderMode.GENTLE))
+    fun `persistent notification required for gentle`() {
+        assertTrue(scheduler.isPersistentNotificationRequired(ReminderMode.GENTLE))
     }
 }

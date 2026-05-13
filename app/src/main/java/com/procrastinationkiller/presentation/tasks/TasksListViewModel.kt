@@ -25,7 +25,8 @@ data class TasksListUiState(
     val selectedPriority: TaskPriority? = null,
     val selectedStatus: TaskStatus? = null,
     val sortOrder: TaskSortOrder = TaskSortOrder.CREATED_DESC,
-    val showCreateDialog: Boolean = false
+    val showCreateDialog: Boolean = false,
+    val snackbarMessage: String? = null
 )
 
 @HiltViewModel
@@ -104,8 +105,29 @@ class TasksListViewModel @Inject constructor(
     }
 
     fun completeTask(taskId: Long) {
+        val currentTasks = _uiState.value.tasks
+        val taskToRemove = currentTasks.find { it.id == taskId } ?: return
+        val taskIndex = currentTasks.indexOf(taskToRemove)
+
+        // Optimistic removal
+        _uiState.update { it.copy(tasks = it.tasks.filter { task -> task.id != taskId }) }
+
         viewModelScope.launch {
-            updateTaskUseCase.updateStatus(taskId, TaskStatus.COMPLETED)
+            try {
+                updateTaskUseCase.updateStatus(taskId, TaskStatus.COMPLETED)
+            } catch (_: Exception) {
+                // Rollback on failure
+                _uiState.update { state ->
+                    val mutableTasks = state.tasks.toMutableList()
+                    val insertIndex = taskIndex.coerceAtMost(mutableTasks.size)
+                    mutableTasks.add(insertIndex, taskToRemove)
+                    state.copy(tasks = mutableTasks, snackbarMessage = "Failed to complete task")
+                }
+            }
         }
+    }
+
+    fun clearSnackbar() {
+        _uiState.update { it.copy(snackbarMessage = null) }
     }
 }

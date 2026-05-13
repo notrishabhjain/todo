@@ -21,7 +21,8 @@ import javax.inject.Inject
 data class InboxUiState(
     val suggestions: List<TaskSuggestion> = emptyList(),
     val isLoading: Boolean = true,
-    val message: String? = null
+    val message: String? = null,
+    val snackbarMessage: String? = null
 )
 
 @HiltViewModel
@@ -67,27 +68,63 @@ class InboxViewModel @Inject constructor(
     }
 
     fun approveSuggestion(suggestion: TaskSuggestion) {
+        val currentSuggestions = _uiState.value.suggestions
+        val suggestionIndex = currentSuggestions.indexOf(suggestion)
+
+        // Optimistic removal
+        _uiState.update { state ->
+            state.copy(suggestions = state.suggestions - suggestion)
+        }
+
         viewModelScope.launch {
-            approveTaskUseCase(suggestion)
-            updateSuggestionStatus(suggestion, "APPROVED")
-            _uiState.update { state ->
-                state.copy(
-                    suggestions = state.suggestions - suggestion,
-                    message = "Task approved: ${suggestion.suggestedTitle}"
-                )
+            try {
+                approveTaskUseCase(suggestion)
+                updateSuggestionStatus(suggestion, "APPROVED")
+                _uiState.update { state ->
+                    state.copy(message = "Task approved: ${suggestion.suggestedTitle}")
+                }
+            } catch (_: Exception) {
+                // Rollback on failure
+                _uiState.update { state ->
+                    val mutableSuggestions = state.suggestions.toMutableList()
+                    val insertIndex = suggestionIndex.coerceAtMost(mutableSuggestions.size)
+                    mutableSuggestions.add(insertIndex, suggestion)
+                    state.copy(
+                        suggestions = mutableSuggestions,
+                        snackbarMessage = "Failed to approve suggestion"
+                    )
+                }
             }
         }
     }
 
     fun rejectSuggestion(suggestion: TaskSuggestion) {
+        val currentSuggestions = _uiState.value.suggestions
+        val suggestionIndex = currentSuggestions.indexOf(suggestion)
+
+        // Optimistic removal
+        _uiState.update { state ->
+            state.copy(suggestions = state.suggestions - suggestion)
+        }
+
         viewModelScope.launch {
-            rejectTaskUseCase(suggestion)
-            updateSuggestionStatus(suggestion, "REJECTED")
-            _uiState.update { state ->
-                state.copy(
-                    suggestions = state.suggestions - suggestion,
-                    message = "Suggestion rejected"
-                )
+            try {
+                rejectTaskUseCase(suggestion)
+                updateSuggestionStatus(suggestion, "REJECTED")
+                _uiState.update { state ->
+                    state.copy(message = "Suggestion rejected")
+                }
+            } catch (_: Exception) {
+                // Rollback on failure
+                _uiState.update { state ->
+                    val mutableSuggestions = state.suggestions.toMutableList()
+                    val insertIndex = suggestionIndex.coerceAtMost(mutableSuggestions.size)
+                    mutableSuggestions.add(insertIndex, suggestion)
+                    state.copy(
+                        suggestions = mutableSuggestions,
+                        snackbarMessage = "Failed to reject suggestion"
+                    )
+                }
             }
         }
     }
@@ -136,6 +173,10 @@ class InboxViewModel @Inject constructor(
 
     fun clearMessage() {
         _uiState.update { it.copy(message = null) }
+    }
+
+    fun clearSnackbar() {
+        _uiState.update { it.copy(snackbarMessage = null) }
     }
 
     fun addSuggestion(suggestion: TaskSuggestion) {
