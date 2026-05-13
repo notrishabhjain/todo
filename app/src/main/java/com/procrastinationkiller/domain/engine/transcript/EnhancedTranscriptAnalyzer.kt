@@ -274,7 +274,7 @@ class EnhancedTranscriptAnalyzer(
     )
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^(?:\\[?\\d{1,2}[:.\\-]\\d{2}(?:[:.\\-]\\d{2})?\\]?\\s*[-]?\\s*)?\\*{0,2}([A-Za-z][A-Za-z0-9\\s]*?)\\*{0,2}\\s*:\\s*")
+        private val SPEAKER_PATTERN = TranscriptPatterns.SPEAKER_PATTERN
         private val SENTENCE_DELIMITER = Regex("[.!?;]+\\s*")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will|should|needs? to|can you|could you)")

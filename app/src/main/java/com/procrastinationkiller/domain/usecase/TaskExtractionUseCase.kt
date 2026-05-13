@@ -24,6 +24,7 @@ import com.procrastinationkiller.presentation.MainActivity
 import com.procrastinationkiller.service.NotificationChannelManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,14 +37,28 @@ class TaskExtractionUseCase @Inject constructor(
     private val notificationRepository: NotificationRepository,
     private val taskSuggestionDao: TaskSuggestionDao,
     @ApplicationContext private val context: Context,
+    private val notificationDao: com.procrastinationkiller.data.local.dao.NotificationDao,
     private val whatsAppIntelligenceEngine: WhatsAppIntelligenceEngine? = null,
     private val semanticDeduplicator: SemanticDeduplicator? = null,
-    private val approveTaskUseCase: ApproveTaskUseCase? = null,
-    private val notificationDao: com.procrastinationkiller.data.local.dao.NotificationDao? = null
+    private val approveTaskUseCase: ApproveTaskUseCase? = null
 ) {
 
     companion object {
         private const val SUGGESTION_NOTIFICATION_ID_BASE = 3000
+        private const val SUGGESTION_NOTIFICATION_ID_LIMIT = 4000
+
+        // Monotonically incrementing counter for unique notification IDs.
+        // Cycles through [3000, 4000) providing 1000 unique IDs before wrapping.
+        private val notificationIdCounter = AtomicInteger(SUGGESTION_NOTIFICATION_ID_BASE)
+
+        private fun nextNotificationId(): Int {
+            val id = notificationIdCounter.getAndIncrement()
+            if (id >= SUGGESTION_NOTIFICATION_ID_LIMIT) {
+                notificationIdCounter.compareAndSet(id + 1, SUGGESTION_NOTIFICATION_ID_BASE)
+                return SUGGESTION_NOTIFICATION_ID_BASE
+            }
+            return id
+        }
 
         fun computeContentHash(sender: String, originalText: String, sourceApp: String): String {
             val input = "$sender|$originalText|$sourceApp"
@@ -67,7 +82,7 @@ class TaskExtractionUseCase @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notificationId = SUGGESTION_NOTIFICATION_ID_BASE + (System.currentTimeMillis() % 1000).toInt()
+        val notificationId = nextNotificationId()
         val notification = NotificationCompat.Builder(context, NotificationChannelManager.CHANNEL_SUGGESTIONS)
             .setContentTitle("New Task Suggestion")
             .setContentText(title)
@@ -88,7 +103,7 @@ class TaskExtractionUseCase @Inject constructor(
         val parsed = notificationParser.parse(sbn)
 
         // sbnKey-based dedup: skip if this sbnKey was already processed within last hour
-        if (sbnKey != null && notificationDao != null) {
+        if (sbnKey != null) {
             val oneHourAgo = System.currentTimeMillis() - 3_600_000L
             val count = notificationDao.countBySbnKeyInLastHour(sbnKey, oneHourAgo)
             if (count > 0) {

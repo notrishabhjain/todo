@@ -24,18 +24,20 @@ class NotificationCaptureService : NotificationListenerService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Volatile
-    private var monitoredApps: Set<String> = setOf(
-        "com.whatsapp",
-        "org.telegram.messenger",
-        "com.slack",
-        "com.google.android.gm"
-    )
+    private var monitoredApps: Set<String> = emptySet()
+
+    // Tracks whether the monitoredApps set has been loaded from preferences at least once.
+    // While not yet loaded (empty set), all notifications are allowed through to avoid
+    // dropping notifications during the startup race window.
+    @Volatile
+    private var monitoredAppsLoaded: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
         serviceScope.launch {
             userPreferencesRepository.monitoredApps.collect { apps ->
                 monitoredApps = apps
+                monitoredAppsLoaded = true
             }
         }
     }
@@ -48,8 +50,10 @@ class NotificationCaptureService : NotificationListenerService() {
             return
         }
 
-        // Skip notifications from apps not in the monitored set
-        if (sbn.packageName !in monitoredApps) {
+        // Skip notifications from apps not in the monitored set.
+        // When monitoredApps hasn't been loaded yet, allow all notifications through
+        // to avoid dropping notifications during the startup race window.
+        if (monitoredAppsLoaded && sbn.packageName !in monitoredApps) {
             return
         }
 

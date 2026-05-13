@@ -15,6 +15,11 @@ class ReminderScheduleManager @Inject constructor(
 ) {
 
     companion object {
+        // A single request code is used intentionally. This app schedules one periodic
+        // reminder alarm at a time. Calling scheduleExactReminder again replaces the
+        // previous alarm by design, ensuring only one outstanding reminder exists.
+        // If multiple concurrent alarms are needed in the future, derive unique request
+        // codes from a task ID or alarm purpose identifier.
         private const val REQUEST_CODE = 5001
     }
 

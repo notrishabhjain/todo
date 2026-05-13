@@ -91,7 +91,7 @@ class SpeakerRoleDetector {
     }
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^(?:\\[?\\d{1,2}[:.\\-]\\d{2}(?:[:.\\-]\\d{2})?\\]?\\s*[-]?\\s*)?\\*{0,2}([A-Za-z][A-Za-z0-9\\s]*?)\\*{0,2}\\s*:\\s*")
+        private val SPEAKER_PATTERN = TranscriptPatterns.SPEAKER_PATTERN
         private val ASSIGNMENT_PATTERN = Regex("^(\\w{2,}),?\\s+(?:please|will you|can you|could you|should)")
         private val AT_MENTION_PATTERN = Regex("@(\\w+)")
         private val ASSIGNMENT_KEYWORDS = listOf("please", "will you", "can you", "could you", "need you to")

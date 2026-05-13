@@ -2,6 +2,7 @@ package com.procrastinationkiller.domain.engine
 
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.engine.transcript.EnhancedTranscriptAnalyzer
+import com.procrastinationkiller.domain.engine.transcript.TranscriptPatterns
 import com.procrastinationkiller.domain.model.TaskPriority
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -133,7 +134,7 @@ class TranscriptAnalyzer @Inject constructor(
     )
 
     companion object {
-        private val SPEAKER_PATTERN = Regex("^(?:\\[?\\d{1,2}[:.\\-]\\d{2}(?:[:.\\-]\\d{2})?\\]?\\s*[-]?\\s*)?\\*{0,2}([A-Za-z][A-Za-z0-9\\s]*?)\\*{0,2}\\s*:\\s*")
+        private val SPEAKER_PATTERN = TranscriptPatterns.SPEAKER_PATTERN
         private val TIMESTAMP_PATTERN = Regex("^\\s*(?:\\[?\\d{1,2}[:.]\\d{2}(?:[:.]\\d{2})?\\]?[\\s-]*)(?:\\s*-\\s*)?")
         private val FILLER_WORDS_PATTERN = Regex(",?\\s*\\b(?:um|uh|you know)\\b,?\\s*", RegexOption.IGNORE_CASE)
         // "like" is only stripped when surrounded by commas (filler usage: ", like,")

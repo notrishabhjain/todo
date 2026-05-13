@@ -82,6 +82,14 @@ class OnnxIntentClassifier : IntentClassifier {
     /**
      * Attempts to initialize OrtEnvironment and OrtSession.
      * Returns true if successful, false otherwise.
+     *
+     * NOTE: This uses reflection to avoid a compile-time dependency on the ONNX Runtime
+     * native library. The tradeoff is that method signature changes in future ONNX Runtime
+     * versions will fail at runtime rather than compile time. This is acceptable because
+     * the app gracefully falls back to RuleBasedIntentClassifier when ONNX is unavailable.
+     *
+     * The model is loaded into a byte array in memory. For the expected quantized model
+     * size (<10 MB), this is fine. Larger models would need a streaming approach.
      */
     private fun initializeOnnxSession(): Boolean {
         return try {
