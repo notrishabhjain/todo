@@ -125,6 +125,7 @@ fun TaskDetailScreen(
                     task = task,
                     onComplete = { viewModel.completeTask() },
                     onDelete = { viewModel.deleteTask() },
+                    onArchive = { viewModel.archiveTask() },
                     onAddToCalendar = { viewModel.addToCalendar() }
                 )
             }
@@ -137,6 +138,7 @@ private fun ViewMode(
     task: com.procrastinationkiller.data.local.entity.TaskEntity,
     onComplete: () -> Unit,
     onDelete: () -> Unit,
+    onArchive: () -> Unit,
     onAddToCalendar: () -> Unit
 ) {
     val priority = try {
@@ -252,8 +254,14 @@ private fun ViewMode(
                 onClick = onAddToCalendar,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Add to Calendar")
+                Text("Calendar")
             }
+        }
+        OutlinedButton(
+            onClick = onArchive,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Archive")
         }
         OutlinedButton(
             onClick = onDelete,

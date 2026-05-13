@@ -1,5 +1,6 @@
 package com.procrastinationkiller.di
 
+import android.app.Application
 import com.procrastinationkiller.domain.engine.ml.HybridClassificationPipeline
 import com.procrastinationkiller.domain.engine.ml.OnnxIntentClassifier
 import com.procrastinationkiller.domain.engine.ml.RuleBasedIntentClassifier
@@ -20,7 +21,8 @@ object MlModule {
 
     @Provides
     @Singleton
-    fun provideOnnxIntentClassifier(): OnnxIntentClassifier = OnnxIntentClassifier()
+    fun provideOnnxIntentClassifier(application: Application): OnnxIntentClassifier =
+        OnnxIntentClassifier(application)
 
     @Provides
     @Singleton

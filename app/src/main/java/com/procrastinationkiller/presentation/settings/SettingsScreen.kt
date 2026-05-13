@@ -336,6 +336,15 @@ fun SettingsScreen(
             }
         }
 
+        // Background Protection Section
+        item {
+            SectionHeader("Background Protection")
+        }
+
+        item {
+            OemAutoStartGuideCard()
+        }
+
         // About Section
         item {
             SectionHeader("About")

@@ -59,12 +59,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ProcrastinationKillerTheme {
+            val mainViewModel: MainViewModel = hiltViewModel()
+            val isDarkMode by mainViewModel.isDarkMode.collectAsState()
+
+            ProcrastinationKillerTheme(darkTheme = isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    MainScreen(mainViewModel = mainViewModel)
                 }
             }
         }
@@ -72,8 +75,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MainScreen() {
-    val mainViewModel: MainViewModel = hiltViewModel()
+private fun MainScreen(mainViewModel: MainViewModel) {
     val startDestination by mainViewModel.startDestination.collectAsState()
     val isNotificationListenerEnabled by mainViewModel.isNotificationListenerEnabled.collectAsState()
     val context = LocalContext.current

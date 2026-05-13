@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.procrastinationkiller.presentation.settings.OemAutoStartGuideCard
 import kotlinx.coroutines.launch
 
 data class OnboardingPage(
@@ -110,7 +111,10 @@ fun OnboardingScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { pageIndex ->
-            OnboardingPageContent(page = pages[pageIndex])
+            OnboardingPageContent(
+                page = pages[pageIndex],
+                showOemGuide = pageIndex == 3 // Battery Optimization page
+            )
         }
 
         // Page indicators
@@ -180,7 +184,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingPageContent(page: OnboardingPage) {
+private fun OnboardingPageContent(page: OnboardingPage, showOemGuide: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -220,5 +224,10 @@ private fun OnboardingPageContent(page: OnboardingPage) {
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (showOemGuide) {
+            Spacer(modifier = Modifier.height(16.dp))
+            OemAutoStartGuideCard()
+        }
     }
 }
