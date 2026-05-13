@@ -154,6 +154,59 @@ class TranscriptAnalyzerTest {
         assertEquals("Rahul", items.first().owner)
     }
 
+    @Test
+    fun `extracts action items from bold speaker format with timestamps`() {
+        val transcript = """
+            [00:59:38] **Speaker 2:** Please send the report by tomorrow
+            [00:59:43] **Speaker 4:** I will review the PR today
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.analyze(transcript)
+
+        assertTrue(items.isNotEmpty())
+        assertTrue(items.any { it.text.contains("send") })
+        assertTrue(items.any { it.text.contains("review") })
+    }
+
+    @Test
+    fun `handles bold speaker format without timestamps`() {
+        val transcript = """
+            **Speaker 1:** We need to deploy the fix
+            **Speaker 2:** OK, I will handle it
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.analyze(transcript)
+
+        assertTrue(items.isNotEmpty())
+        assertTrue(items.any { it.text.contains("deploy") })
+    }
+
+    @Test
+    fun `handles user exact transcript format with Hindi content`() {
+        val transcript = """
+            [00:59:38] **Speaker 2:** Kal tak report bhej dena jaldi
+            [00:59:43] **Speaker 4:** Check karna hai database issue urgent hai
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.analyze(transcript)
+
+        assertTrue(items.isNotEmpty())
+        assertTrue(items.size >= 2)
+    }
+
+    @Test
+    fun `enhanced analyze handles bold speaker format with timestamps`() {
+        val pipeline = createPipeline()
+        val transcript = """
+            [00:59:38] **Speaker 2:** Please send the report by tomorrow
+            [00:59:43] **Speaker 4:** I will review the PR today
+        """.trimIndent()
+
+        val items = transcriptAnalyzer.enhancedAnalyze(transcript, pipeline)
+
+        assertTrue(items.isNotEmpty())
+    }
+
     // Enhanced analyze tests
 
     @Test
