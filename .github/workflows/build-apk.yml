@@ -62,14 +62,18 @@ jobs:
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          # Note: GitHub Actions wraps artifacts in a ZIP. Extract the ZIP to get the APK file.
+          name: procrastination-killer-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          compression-level: 0
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          # Note: GitHub Actions wraps artifacts in a ZIP. Extract the ZIP to get the APK file.
+          name: procrastination-killer-release-apk
           path: app/build/outputs/apk/release/app-release.apk
+          compression-level: 0
 
   release:
     name: Create GitHub Release
