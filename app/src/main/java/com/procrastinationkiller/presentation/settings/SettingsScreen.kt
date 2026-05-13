@@ -19,16 +19,21 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.procrastinationkiller.domain.engine.ReminderFrequency
+import com.procrastinationkiller.domain.model.ContactPriority
 import com.procrastinationkiller.domain.model.ReminderMode
 
 @Composable
@@ -53,6 +59,18 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    var showAddContactDialog by remember { mutableStateOf(false) }
+
+    if (showAddContactDialog) {
+        AddContactDialog(
+            onDismiss = { showAddContactDialog = false },
+            onConfirm = { name, priority ->
+                viewModel.addContact(name, priority)
+                showAddContactDialog = false
+            }
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -111,6 +129,15 @@ fun SettingsScreen(
                 isVip = contact.isEscalationTarget,
                 onDelete = { viewModel.deleteContact(contact) }
             )
+        }
+
+        item {
+            OutlinedButton(
+                onClick = { showAddContactDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("+ Add Contact")
+            }
         }
 
         // Keyword Management Section
@@ -502,4 +529,59 @@ private fun ContactItem(
             }
         }
     }
+}
+
+@Composable
+private fun AddContactDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, ContactPriority) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedPriority by remember { mutableStateOf(ContactPriority.VIP) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add VIP Contact") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Contact Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Text(
+                    text = "Priority",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ContactPriority.entries.forEach { priority ->
+                        FilterChip(
+                            selected = selectedPriority == priority,
+                            onClick = { selectedPriority = priority },
+                            label = { Text(priority.displayName) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim(), selectedPriority) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
