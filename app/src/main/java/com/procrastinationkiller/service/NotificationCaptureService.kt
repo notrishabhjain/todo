@@ -57,11 +57,23 @@ class NotificationCaptureService : NotificationListenerService() {
 
         private val whatsAppPackages = setOf("com.whatsapp", "com.whatsapp.w4b")
 
+        private val MESSAGE_COUNT_PATTERN = Regex("^\\d+\\s+(new\\s+)?messages?(\\s+from.*)?$", RegexOption.IGNORE_CASE)
+
+        fun isWhatsAppMessageCountNotification(text: String?): Boolean {
+            if (text == null) return false
+            return MESSAGE_COUNT_PATTERN.matches(text.trim())
+        }
+
         fun isWhatsAppSystemNotification(packageName: String, title: String?, text: String?): Boolean {
             if (packageName !in whatsAppPackages) return false
 
             val lowerTitle = title?.lowercase() ?: ""
             val lowerText = text?.lowercase() ?: ""
+
+            // Check message count summaries (e.g., "2 new messages", "5 messages from John")
+            if (isWhatsAppMessageCountNotification(title) || isWhatsAppMessageCountNotification(text)) {
+                return true
+            }
 
             return whatsAppSystemMessages.any { systemMsg ->
                 lowerTitle.contains(systemMsg) || lowerText.contains(systemMsg) ||

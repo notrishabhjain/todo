@@ -204,6 +204,103 @@ class NotificationCaptureServiceTest {
         )
     }
 
+    // WhatsApp message count notification tests
+
+    @Test
+    fun `WhatsApp 2 new messages is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "2 new messages"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp 5 messages from contact is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "5 messages from John"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp 3 new messages from contact is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "3 new messages from Jane Doe"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp 1 new message is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "1 new message"
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp message count in title is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "2 new messages",
+                text = null
+            )
+        )
+    }
+
+    @Test
+    fun `WhatsApp 10 messages from group is filtered`() {
+        assertTrue(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "WhatsApp",
+                text = "10 messages from Work Group"
+            )
+        )
+    }
+
+    @Test
+    fun `regular message containing number is not filtered`() {
+        assertFalse(
+            NotificationCaptureService.isWhatsAppSystemNotification(
+                packageName = "com.whatsapp",
+                title = "John",
+                text = "I sent you 3 files yesterday"
+            )
+        )
+    }
+
+    @Test
+    fun `isWhatsAppMessageCountNotification returns true for valid patterns`() {
+        assertTrue(NotificationCaptureService.isWhatsAppMessageCountNotification("2 new messages"))
+        assertTrue(NotificationCaptureService.isWhatsAppMessageCountNotification("5 messages from John"))
+        assertTrue(NotificationCaptureService.isWhatsAppMessageCountNotification("1 new message"))
+        assertTrue(NotificationCaptureService.isWhatsAppMessageCountNotification("12 messages"))
+        assertTrue(NotificationCaptureService.isWhatsAppMessageCountNotification("3 New Messages From Group"))
+    }
+
+    @Test
+    fun `isWhatsAppMessageCountNotification returns false for non-matching text`() {
+        assertFalse(NotificationCaptureService.isWhatsAppMessageCountNotification(null))
+        assertFalse(NotificationCaptureService.isWhatsAppMessageCountNotification("Hey, how are you?"))
+        assertFalse(NotificationCaptureService.isWhatsAppMessageCountNotification("Please send 2 messages"))
+        assertFalse(NotificationCaptureService.isWhatsAppMessageCountNotification("messages"))
+        assertFalse(NotificationCaptureService.isWhatsAppMessageCountNotification("new messages"))
+    }
+
     // Gmail system notification filter tests
 
     @Test
