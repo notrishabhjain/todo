@@ -29,7 +29,30 @@ class NotificationCaptureService : NotificationListenerService() {
             "missed voice call",
             "missed video call",
             "you might have new messages",
-            "message timer updated"
+            "message timer updated",
+            "syncing messages",
+            "syncing",
+            "backup in progress",
+            "restoring messages",
+            "downloading media",
+            "uploading media",
+            "connecting",
+            "updating",
+            "installing update",
+            "could not connect",
+            "no internet connection",
+            "tap for more info",
+            "tap to learn more",
+            "security code changed",
+            "your security code with",
+            "business account",
+            "changed their phone number",
+            "left the group",
+            "joined the group",
+            "added you",
+            "removed you",
+            "changed the subject",
+            "changed this group"
         )
 
         private val whatsAppPackages = setOf("com.whatsapp", "com.whatsapp.w4b")
@@ -43,6 +66,51 @@ class NotificationCaptureService : NotificationListenerService() {
             return whatsAppSystemMessages.any { systemMsg ->
                 lowerTitle.contains(systemMsg) || lowerText.contains(systemMsg) ||
                     lowerTitle == systemMsg || lowerText == systemMsg
+            }
+        }
+
+        private val gmailSystemMessages = setOf(
+            "syncing",
+            "syncing mail",
+            "sync",
+            "account sync",
+            "deleted",
+            "archived",
+            "conversation deleted",
+            "conversation archived",
+            "message deleted",
+            "message archived",
+            "undo",
+            "undone",
+            "removed",
+            "moved to trash",
+            "marked as read",
+            "marked as spam",
+            "muted",
+            "snoozed",
+            "label added",
+            "label removed",
+            "sending",
+            "sent",
+            "uploading attachment",
+            "checking for mail",
+            "no new mail"
+        )
+
+        private val gmailPackages = setOf(
+            "com.google.android.gm",
+            "com.google.android.gm.lite"
+        )
+
+        fun isGmailSystemNotification(packageName: String, title: String?, text: String?): Boolean {
+            if (packageName !in gmailPackages) return false
+
+            val lowerTitle = title?.lowercase()?.trim() ?: ""
+            val lowerText = text?.lowercase()?.trim() ?: ""
+
+            return gmailSystemMessages.any { systemMsg ->
+                lowerTitle == systemMsg || lowerText == systemMsg ||
+                    lowerTitle.startsWith(systemMsg) || lowerText.startsWith(systemMsg)
             }
         }
     }
@@ -94,6 +162,11 @@ class NotificationCaptureService : NotificationListenerService() {
             return
         }
 
+        // Filter Gmail system notifications
+        if (isGmailSystemNotification(sbn)) {
+            return
+        }
+
         serviceScope.launch {
             taskExtractionUseCase.processNotification(sbn, sbnKey = sbn.key)
         }
@@ -134,5 +207,12 @@ class NotificationCaptureService : NotificationListenerService() {
         val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString()
         val text = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString()
         return Companion.isWhatsAppSystemNotification(sbn.packageName, title, text)
+    }
+
+    private fun isGmailSystemNotification(sbn: StatusBarNotification): Boolean {
+        val extras = sbn.notification.extras
+        val title = extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString()
+        val text = extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString()
+        return Companion.isGmailSystemNotification(sbn.packageName, title, text)
     }
 }
